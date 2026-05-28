@@ -2,6 +2,8 @@ import { ethers } from "ethers";
 import { EMOJI_WAR_V7_CONFIG } from "./config.js";
 import { ERC20_ABI, ARMY_V7_ABI, BURN_V7_ABI, VAULT_ABI, REWARD_POOL_V7_ABI } from "./abis.js";
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
 export function getInjectedProvider() {
   if (!window.ethereum) {
     throw new Error("No wallet found. Please install MetaMask or use a Web3 wallet.");
@@ -55,36 +57,46 @@ export function getContracts(providerOrSigner) {
   };
 }
 
-export function parseTokenAmount(amountText) {
-  const clean = String(amountText || "0").replace(/,/g, "").trim();
-  return ethers.parseUnits(clean || "0", EMOJI_WAR_V7_CONFIG.token.decimals);
+async function safeCall(fn, fallback) {
+  try {
+    return await fn();
+  } catch (err) {
+    console.warn("V7 read fallback:", err?.shortMessage || err?.message || err);
+    return fallback;
+  }
 }
 
-function formatUnitsSafe(value, decimals, digits = 2) {
+export function parseTokenAmount(amountText) {
+  return ethers.parseUnits(String(amountText || "0"), EMOJI_WAR_V7_CONFIG.token.decimals);
+}
+
+export function formatToken(value, digits = 2) {
   try {
-    const raw = ethers.formatUnits(value || 0n, decimals);
-    const [whole, frac = ""] = raw.split(".");
-    const shortFrac = frac.slice(0, digits).replace(/0+$/, "");
-    const wholeFormatted = Number(whole).toLocaleString();
-    return shortFrac ? `${wholeFormatted}.${shortFrac}` : wholeFormatted;
+    return Number(ethers.formatUnits(value || 0n, EMOJI_WAR_V7_CONFIG.token.decimals)).toLocaleString(undefined, {
+      maximumFractionDigits: digits,
+    });
   } catch {
     return "0";
   }
 }
 
-export function formatToken(value, digits = 2) {
-  return formatUnitsSafe(value, EMOJI_WAR_V7_CONFIG.token.decimals, digits);
-}
-
 export function formatBNB(value, digits = 6) {
-  return formatUnitsSafe(value, 18, digits);
+  try {
+    return Number(ethers.formatEther(value || 0n)).toLocaleString(undefined, {
+      maximumFractionDigits: digits,
+    });
+  } catch {
+    return "0";
+  }
 }
 
-// 兼容旧测试面板 EmojiWarV7Panel.jsx 里的 fmtWei 调用
-export const fmtWei = formatBNB;
+// 兼容旧组件 EmojiWarV7Panel.jsx
+export function fmtWei(value, digits = 6) {
+  return formatBNB(value, digits);
+}
 
 export function shortAddress(address) {
-  if (!address || address === "0x0000000000000000000000000000000000000000") return "-";
+  if (!address) return "-";
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
@@ -101,27 +113,12 @@ export function formatCountdown(sec) {
   return `${h}h ${m}m ${r}s`;
 }
 
-async function safeCall(fn, fallback) {
-  try {
-    const result = await fn();
-    return result ?? fallback;
-  } catch (err) {
-    console.warn("EmojiWar V7 read failed:", err?.shortMessage || err?.message || err);
-    return fallback;
-  }
-}
-
 export async function readV7Dashboard(userAddress) {
-  if (!userAddress) throw new Error("Wallet address is required");
-
   const provider = getInjectedProvider();
   const c = getContracts(provider);
 
   const currentSeasonBN = await safeCall(() => c.army.currentSeason(), 1n);
   const seasonId = Number(currentSeasonBN || 1n);
-
-  const zero = 0n;
-  const zeroAddress = "0x0000000000000000000000000000000000000000";
 
   const [
     tokenBalance,
@@ -140,43 +137,45 @@ export async function readV7Dashboard(userAddress) {
     activeDepositSeason,
     seasonInfo,
   ] = await Promise.all([
-    safeCall(() => c.token.balanceOf(userAddress), zero),
+    safeCall(() => c.token.balanceOf(userAddress), 0n),
     safeCall(() => c.rewardPool.hasMinHold(userAddress), false),
     safeCall(() => c.army.getUserArmy(seasonId, userAddress), 0n),
-    safeCall(() => c.army.secondsUntilCurrentSeasonEnds(), zero),
-    safeCall(() => c.burn.userBurned(seasonId, userAddress), zero),
-    safeCall(() => c.burn.seasonTotalBurned(seasonId), zero),
-    safeCall(() => c.burn.getWinningArmy(seasonId), [0n, zero]),
-    safeCall(() => c.rewardPool.getRealtimeClaimable(userAddress), zero),
-    safeCall(() => c.rewardPool.getSeasonBonusClaimable(seasonId, userAddress), zero),
-    safeCall(() => c.vault.getVaultBalance(), zero),
-    safeCall(() => c.vault.totalReceived(), zero),
-    safeCall(() => c.vault.totalWithdrawn(), zero),
-    safeCall(() => c.rewardPool.getPoolBalance(), zero),
-    safeCall(() => c.rewardPool.activeDepositSeason(), 1n),
-    safeCall(() => c.rewardPool.getSeasonInfo(seasonId), [false, false, zero, zero, zero, zero, zero, 0n, zeroAddress, zeroAddress, zeroAddress]),
+    safeCall(() => c.army.secondsUntilCurrentSeasonEnds(), 0n),
+    safeCall(() => c.burn.userBurned(seasonId, userAddress), 0n),
+    safeCall(() => c.burn.seasonTotalBurned(seasonId), 0n),
+    safeCall(() => c.burn.getWinningArmy(seasonId), [0n, 0n]),
+    safeCall(() => c.rewardPool.getRealtimeClaimable(userAddress), 0n),
+    safeCall(() => c.rewardPool.getSeasonBonusClaimable(seasonId, userAddress), 0n),
+    safeCall(() => c.vault.getVaultBalance(), 0n),
+    safeCall(() => c.vault.totalReceived(), 0n),
+    safeCall(() => c.vault.totalWithdrawn(), 0n),
+    safeCall(() => c.rewardPool.getPoolBalance(), 0n),
+    safeCall(() => c.rewardPool.activeDepositSeason(), 0n),
+    safeCall(() => c.rewardPool.getSeasonInfo(seasonId), [
+      false, false, 0n, 0n, 0n, 0n, 0n, 0n, ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS
+    ]),
   ]);
 
   const top10 = [];
   for (let rank = 1; rank <= 10; rank++) {
     const [user, amount] = await Promise.all([
-      safeCall(() => c.burn.getTopUser(seasonId, rank), zeroAddress),
-      safeCall(() => c.burn.getTopAmount(seasonId, rank), zero),
+      safeCall(() => c.burn.getTopUser(seasonId, rank), ZERO_ADDRESS),
+      safeCall(() => c.burn.getTopAmount(seasonId, rank), 0n),
     ]);
     top10.push({ rank, user, amount });
   }
 
   return {
     currentSeason: seasonId,
-    activeDepositSeason: Number(activeDepositSeason || 1n),
+    activeDepositSeason: Number(activeDepositSeason || 0n),
     tokenBalance,
-    hasMinHold: Boolean(hasMinHold),
+    hasMinHold,
     myArmy: Number(myArmy || 0n),
     secondsLeft: Number(secondsLeft || 0n),
     myBurn,
     seasonTotalBurned,
     winningArmy: Number(winning?.[0] || 0n),
-    winningAmount: winning?.[1] || zero,
+    winningAmount: winning?.[1] || 0n,
     realtimeClaimable,
     seasonBonusClaimable,
     vaultBalance,
@@ -186,15 +185,15 @@ export async function readV7Dashboard(userAddress) {
     seasonInfo: {
       finalized: Boolean(seasonInfo?.[0]),
       ended: Boolean(seasonInfo?.[1]),
-      deposited: seasonInfo?.[2] || zero,
-      bonusDeposited: seasonInfo?.[3] || zero,
-      bonusClaimed: seasonInfo?.[4] || zero,
-      totalBurned: seasonInfo?.[5] || zero,
-      eligibleBurned: seasonInfo?.[6] || zero,
+      deposited: seasonInfo?.[2] || 0n,
+      bonusDeposited: seasonInfo?.[3] || 0n,
+      bonusClaimed: seasonInfo?.[4] || 0n,
+      totalBurned: seasonInfo?.[5] || 0n,
+      eligibleBurned: seasonInfo?.[6] || 0n,
       winningArmy: Number(seasonInfo?.[7] || 0n),
-      top1: seasonInfo?.[8] || zeroAddress,
-      top2: seasonInfo?.[9] || zeroAddress,
-      top3: seasonInfo?.[10] || zeroAddress,
+      top1: seasonInfo?.[8] || ZERO_ADDRESS,
+      top2: seasonInfo?.[9] || ZERO_ADDRESS,
+      top3: seasonInfo?.[10] || ZERO_ADDRESS,
     },
     top10,
   };
@@ -231,14 +230,14 @@ export async function claimRealtime() {
 export async function claimSeasonBonus(seasonId) {
   const { signer } = await connectWallet();
   const c = getContracts(signer);
-  const tx = await c.rewardPool.claimSeasonBonus(Number(seasonId));
+  const tx = await c.rewardPool.claimSeasonBonus(Number(seasonId || 1));
   return tx.wait();
 }
 
 export async function claimAll(seasonIds, includeRealtime = true) {
   const { signer } = await connectWallet();
   const c = getContracts(signer);
-  const cleanSeasonIds = seasonIds.map((x) => Number(x)).filter((x) => x > 0);
+  const cleanSeasonIds = (seasonIds || []).map((x) => Number(x)).filter((x) => x > 0);
   const tx = await c.rewardPool.claimAll(cleanSeasonIds, Boolean(includeRealtime));
   return tx.wait();
 }
