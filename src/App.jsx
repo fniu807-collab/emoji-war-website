@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { BrowserProvider, Contract, formatUnits, parseUnits } from "ethers";
 
-const BSC_TESTNET_CHAIN_ID = "0x61"; // 97
+const BSC_TESTNET_CHAIN_ID = "0x61";
+const BSC_TESTNET_DECIMAL_ID = 97;
 const BSC_TESTNET_NAME = "BSC Testnet";
 
 const ARMY_CONTRACT_ADDRESS = "0x1579fe91f42caD600a9A3484F4eeA154D00eB0b3";
@@ -25,7 +26,6 @@ const TOKEN_ABI = [
 
 const BURN_ABI = [
   "function burnWholeForArmy(uint256 wholeAmount)",
-  "function getMyBurn() view returns (uint256)",
   "function getUserBurn(uint256 seasonId, address user) view returns (uint256)",
   "function getArmyBurn(uint256 seasonId, uint8 armyId) view returns (uint256)",
   "function getTotalBurn(uint256 seasonId) view returns (uint256)"
@@ -58,10 +58,10 @@ function shortAddress(address) {
 
 function fmtToken(value) {
   try {
-    const n = Number(formatUnits(value || 0n, 18));
+    const n = Number(formatUnits(BigInt(value || "0"), 18));
     if (n >= 1_000_000) return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
     if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
-    return n.toString();
+    return n.toLocaleString(undefined, { maximumFractionDigits: 8 });
   } catch {
     return "0";
   }
@@ -69,6 +69,18 @@ function fmtToken(value) {
 
 function armyById(id) {
   return armies.find((army) => army.id === Number(id));
+}
+
+function chainIdToHex(id) {
+  if (!id) return "";
+  if (typeof id === "number") return `0x${id.toString(16)}`;
+  if (typeof id === "bigint") return `0x${id.toString(16)}`;
+  if (typeof id === "string") return id.startsWith("0x") ? id.toLowerCase() : `0x${Number(id).toString(16)}`;
+  return "";
+}
+
+function localArmyKey(wallet) {
+  return `emoji-war-v5-army-${wallet?.toLowerCase()}`;
 }
 
 export default function App() {
@@ -83,32 +95,54 @@ export default function App() {
   const [myBurn, setMyBurn] = useState("0");
   const [totalBurn, setTotalBurn] = useState("0");
   const [burnAmount, setBurnAmount] = useState("1000");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("已加载 V5.1 优化版。");
   const [isLoading, setIsLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState("");
 
+  const isBscTestnet = chainId?.toLowerCase() === BSC_TESTNET_CHAIN_ID;
   const selectedArmy = useMemo(() => armyById(selectedArmyId), [selectedArmyId]);
   const burnAmountWei = useMemo(() => {
     try { return parseUnits(burnAmount || "0", 18); } catch { return 0n; }
   }, [burnAmount]);
   const needsApprove = burnAmountWei > BigInt(allowance || "0");
 
+  const rankedArmyBurns = useMemo(() => {
+    return [...armies].sort((a, b) => Number(BigInt(armyBurns[b.id] || "0") - BigInt(armyBurns[a.id] || "0")));
+  }, [armyBurns]);
+
+  const rankedArmyMembers = useMemo(() => {
+    return [...armies].sort((a, b) => Number(BigInt(armyMembers[b.id] || "0") - BigInt(armyMembers[a.id] || "0")));
+  }, [armyMembers]);
+
   useEffect(() => {
     const injected = getInjectedProvider();
     if (!injected) return;
 
-    injected.request?.({ method: "eth_accounts" }).then((accounts) => {
-      if (accounts?.[0]) setWallet(accounts[0]);
-    }).catch(() => {});
-
-    injected.request?.({ method: "eth_chainId" }).then(setChainId).catch(() => {});
+    const init = async () => {
+      try {
+        const accounts = await injected.request?.({ method: "eth_accounts" });
+        const id = await getCurrentChainId();
+        setChainId(id);
+        if (accounts?.[0]) {
+          setWallet(accounts[0]);
+          if (id === BSC_TESTNET_CHAIN_ID) await loadChainData(accounts[0]);
+          else loadLocalArmyFallback(accounts[0]);
+        }
+      } catch {}
+    };
+    init();
 
     const handleAccountsChanged = (accounts) => {
-      setWallet(accounts?.[0] || "");
+      const account = accounts?.[0] || "";
+      setWallet(account);
       setSelectedArmyId(0);
+      if (account) loadLocalArmyFallback(account);
     };
-    const handleChainChanged = (id) => {
-      setChainId(id);
-      window.location.reload();
+
+    const handleChainChanged = async (id) => {
+      const normalized = chainIdToHex(id);
+      setChainId(normalized);
+      if (wallet && normalized === BSC_TESTNET_CHAIN_ID) await loadChainData(wallet);
     };
 
     injected.on?.("accountsChanged", handleAccountsChanged);
@@ -117,11 +151,30 @@ export default function App() {
       injected.removeListener?.("accountsChanged", handleAccountsChanged);
       injected.removeListener?.("chainChanged", handleChainChanged);
     };
-  }, []);
+  }, [wallet]);
 
-  useEffect(() => {
-    if (wallet && chainId === BSC_TESTNET_CHAIN_ID) loadChainData(wallet);
-  }, [wallet, chainId]);
+  async function getCurrentChainId() {
+    const injected = getInjectedProvider();
+    if (!injected) return "";
+    try {
+      const raw = await injected.request({ method: "eth_chainId" });
+      return chainIdToHex(raw);
+    } catch {
+      try {
+        const provider = new BrowserProvider(injected);
+        const network = await provider.getNetwork();
+        return chainIdToHex(network.chainId);
+      } catch {
+        return "";
+      }
+    }
+  }
+
+  function loadLocalArmyFallback(account) {
+    if (!account) return;
+    const saved = localStorage.getItem(localArmyKey(account));
+    if (saved) setSelectedArmyId(Number(saved));
+  }
 
   async function connectWallet() {
     const injected = getInjectedProvider();
@@ -129,16 +182,23 @@ export default function App() {
       setStatus("没有检测到钱包插件。请先安装 Binance Wallet 或 MetaMask。");
       return;
     }
+
     try {
       setIsLoading(true);
       const accounts = await injected.request({ method: "eth_requestAccounts" });
       const account = accounts?.[0];
+      const id = await getCurrentChainId();
+
       if (account) setWallet(account);
-      const id = await injected.request({ method: "eth_chainId" });
       setChainId(id);
-      if (id !== BSC_TESTNET_CHAIN_ID) await switchToBscTestnet();
-      else if (account) await loadChainData(account);
-      setStatus("钱包连接成功。");
+
+      if (id !== BSC_TESTNET_CHAIN_ID) {
+        setStatus("钱包已连接，但当前不是 BSC Testnet。请点击切换测试网。");
+        loadLocalArmyFallback(account);
+      } else if (account) {
+        await loadChainData(account);
+        setStatus("钱包连接成功，链上数据已刷新。");
+      }
     } catch (error) {
       setStatus(error?.message || "钱包连接失败。");
     } finally {
@@ -149,12 +209,16 @@ export default function App() {
   async function switchToBscTestnet() {
     const injected = getInjectedProvider();
     if (!injected) return;
+
     try {
+      setIsLoading(true);
       await injected.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: BSC_TESTNET_CHAIN_ID }]
       });
       setChainId(BSC_TESTNET_CHAIN_ID);
+      setStatus("已切换到 BSC Testnet，请点击刷新链上数据。");
+      if (wallet) await loadChainData(wallet);
     } catch (switchError) {
       if (switchError?.code === 4902) {
         await injected.request({
@@ -167,9 +231,12 @@ export default function App() {
             blockExplorerUrls: ["https://testnet.bscscan.com/"]
           }]
         });
+        setChainId(BSC_TESTNET_CHAIN_ID);
       } else {
-        throw switchError;
+        setStatus(switchError?.message || "切换网络失败。");
       }
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -185,7 +252,18 @@ export default function App() {
   }
 
   async function loadChainData(account = wallet) {
+    if (!account) return setStatus("请先连接钱包。");
+
     try {
+      setIsLoading(true);
+      const id = await getCurrentChainId();
+      setChainId(id);
+      if (id !== BSC_TESTNET_CHAIN_ID) {
+        setStatus("当前不是 BSC Testnet，无法读取测试合约。");
+        loadLocalArmyFallback(account);
+        return;
+      }
+
       const armyContract = await getContract(ARMY_CONTRACT_ADDRESS, ARMY_ABI);
       const tokenContract = await getContract(TEST_TOKEN_ADDRESS, TOKEN_ABI);
       const burnContract = await getContract(BURN_CONTRACT_ADDRESS, BURN_ABI);
@@ -193,35 +271,51 @@ export default function App() {
       const seasonId = await armyContract.currentSeason();
       setCurrentSeason(seasonId.toString());
 
-      if (account) {
-        const myArmy = await armyContract.getUserArmy(seasonId, account);
-        setSelectedArmyId(Number(myArmy));
-        setTokenBalance((await tokenContract.balanceOf(account)).toString());
-        setAllowance((await tokenContract.allowance(account, BURN_CONTRACT_ADDRESS)).toString());
-        setMyBurn((await burnContract.getUserBurn(seasonId, account)).toString());
-      }
+      const myArmy = await armyContract.getUserArmy(seasonId, account);
+      const onChainArmy = Number(myArmy);
+      const savedArmy = Number(localStorage.getItem(localArmyKey(account)) || "0");
+      setSelectedArmyId(onChainArmy || savedArmy || 0);
+
+      const [balance, approved, burned] = await Promise.all([
+        tokenContract.balanceOf(account),
+        tokenContract.allowance(account, BURN_CONTRACT_ADDRESS),
+        burnContract.getUserBurn(seasonId, account)
+      ]);
+      setTokenBalance(balance.toString());
+      setAllowance(approved.toString());
+      setMyBurn(burned.toString());
 
       const memberData = {};
       const burnData = {};
       for (const army of armies) {
-        memberData[army.id] = (await armyContract.getArmyMembers(seasonId, army.id)).toString();
-        burnData[army.id] = (await burnContract.getArmyBurn(seasonId, army.id)).toString();
+        const [members, burns] = await Promise.all([
+          armyContract.getArmyMembers(seasonId, army.id),
+          burnContract.getArmyBurn(seasonId, army.id)
+        ]);
+        memberData[army.id] = members.toString();
+        burnData[army.id] = burns.toString();
       }
       setArmyMembers(memberData);
       setArmyBurns(burnData);
-      setTotalBurn((await burnContract.getTotalBurn(seasonId)).toString());
+
+      const seasonBurn = await burnContract.getTotalBurn(seasonId);
+      setTotalBurn(seasonBurn.toString());
+
+      setLastUpdated(new Date().toLocaleTimeString());
     } catch (error) {
       setStatus(error?.shortMessage || error?.message || "读取链上数据失败。");
+    } finally {
+      setIsLoading(false);
     }
   }
 
   async function joinArmyOnChain(armyId) {
     if (!wallet) return setStatus("请先连接钱包。");
-    if (chainId !== BSC_TESTNET_CHAIN_ID) {
+    if (!isBscTestnet) {
       setStatus("请先切换到 BSC Testnet。");
-      await switchToBscTestnet();
       return;
     }
+
     const army = armyById(armyId);
     try {
       setIsLoading(true);
@@ -229,6 +323,8 @@ export default function App() {
       setStatus(`正在加入 ${army.emoji} ${army.cn}，请确认钱包交易。`);
       const tx = await contract.joinArmy(armyId);
       await tx.wait();
+      localStorage.setItem(localArmyKey(wallet), String(armyId));
+      setSelectedArmyId(armyId);
       setStatus(`链上加入成功：${army.emoji} ${army.cn}`);
       await loadChainData(wallet);
     } catch (error) {
@@ -241,6 +337,9 @@ export default function App() {
 
   async function approveBurnContract() {
     if (!wallet) return setStatus("请先连接钱包。");
+    if (!isBscTestnet) return setStatus("请先切换到 BSC Testnet。");
+    if (burnAmountWei <= 0n) return setStatus("请输入大于 0 的燃烧数量。");
+
     try {
       setIsLoading(true);
       const token = await getContract(TEST_TOKEN_ADDRESS, TOKEN_ABI, true);
@@ -259,6 +358,9 @@ export default function App() {
   async function burnForArmy() {
     if (!wallet) return setStatus("请先连接钱包。");
     if (!selectedArmyId) return setStatus("请先链上选择军团。");
+    if (!isBscTestnet) return setStatus("请先切换到 BSC Testnet。");
+    if (needsApprove) return setStatus("授权额度不足，请先点击 Approve。");
+
     try {
       setIsLoading(true);
       const burn = await getContract(BURN_CONTRACT_ADDRESS, BURN_ABI, true);
@@ -288,15 +390,15 @@ export default function App() {
 
         <div className="heroGrid">
           <div className="heroText">
-            <p className="pill"><span></span>情绪上链，黑洞开战</p>
+            <p className="pill"><span></span>V5.1 Optimized · BSC Testnet</p>
             <h1>Emoji War</h1>
             <h2>链上燃烧冲榜战争</h2>
             <p className="lead">每个 Emoji 都是一个军团。每一次燃烧，都是一次情绪投票。燃烧越多，排名越高；排名越高，分红越多。</p>
             <div className="actions">
               <button className="primaryBtn buttonReset" onClick={connectWallet}>{wallet ? "Wallet Connected" : "Connect Wallet"}</button>
-              <a className="secondaryBtn" href={links.flap}>Buy $EMOJI</a>
+              <button className="secondaryBtn buttonReset" onClick={() => loadChainData(wallet)} disabled={!wallet || isLoading}>刷新链上数据</button>
             </div>
-            <p className="note">当前为 BSC Testnet 测试网版本，使用 tEMOJI 测试币。</p>
+            <p className="note">当前为 BSC Testnet 测试网版本，使用 tEMOJI 测试币。最后刷新：{lastUpdated || "未刷新"}</p>
           </div>
 
           <div className="warCard">
@@ -319,7 +421,7 @@ export default function App() {
           <div className="walletStatus">
             <div className="statusTop"><span>Wallet Status</span><b>{wallet ? "Connected" : "Not Connected"}</b></div>
             <h3>{wallet ? shortAddress(wallet) : "Connect Wallet"}</h3>
-            <p>Network: {chainId === BSC_TESTNET_CHAIN_ID ? "BSC Testnet" : chainId ? `Chain ${chainId}` : "Not connected"}</p>
+            <p>Network: {isBscTestnet ? "BSC Testnet" : chainId ? `Wrong Network (${chainId})` : "Not connected"}</p>
             <p>Army: {selectedArmy ? `${selectedArmy.emoji} ${selectedArmy.cn}` : "Not selected on-chain"}</p>
             <p>Balance: {fmtToken(tokenBalance)} tEMOJI</p>
             <p>My Burn: {fmtToken(myBurn)} tEMOJI</p>
@@ -339,7 +441,7 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <p className="chooseHint">每个钱包每个赛季只能选择一次军团。</p>
+            <p className="chooseHint">每个钱包每个赛季只能选择一次军团。已选择后，本赛季按钮会锁定。</p>
           </div>
         </div>
       </section>
@@ -372,11 +474,11 @@ export default function App() {
       </section>
 
       <section id="panel" className="section panelSection">
-        <div className="sectionHead"><p>War Dashboard</p><h2>Season {currentSeason} 燃烧排行榜</h2><span>军团成员数和燃烧数据均从 BSC Testnet 测试合约读取。</span></div>
+        <div className="sectionHead"><p>War Dashboard</p><h2>Season {currentSeason} 燃烧排行榜</h2><span>V5.1 已按燃烧量自动排序。军团成员数和燃烧数据均从 BSC Testnet 测试合约读取。</span></div>
         <div className="rankingGrid">
           <div className="rankingCard">
             <div className="rankingHead"><h3>军团燃烧榜</h3><span>Army Burn Ranking</span></div>
-            {armies.map((army, index) => (
+            {rankedArmyBurns.map((army, index) => (
               <div className="armyRow" key={army.cn}>
                 <div className="rankBadge">{index + 1}</div>
                 <div className="armyName"><span>{army.emoji}</span><div><b>{army.cn}</b><p>{army.en}</p></div></div>
@@ -387,7 +489,7 @@ export default function App() {
 
           <div className="rankingCard">
             <div className="rankingHead"><h3>军团成员榜</h3><span>Army Members</span></div>
-            {armies.map((army, index) => (
+            {rankedArmyMembers.map((army, index) => (
               <div className="armyRow" key={army.cn}>
                 <div className="rankBadge">{index + 1}</div>
                 <div className="armyName"><span>{army.emoji}</span><div><b>{army.cn}</b><p>{army.en}</p></div></div>
@@ -411,7 +513,7 @@ export default function App() {
       </section>
 
       <section id="rules" className="section dark">
-        <div className="sectionHead"><p>Rules</p><h2>战争规则</h2><span>V5 已经完成测试网链上选择军团 + 授权 + 燃烧冲榜。</span></div>
+        <div className="sectionHead"><p>Rules</p><h2>战争规则</h2><span>V5.1 优化了状态显示、链上刷新、榜单排序和测试网提示。</span></div>
         <div className="rulesList">
           <div><b>01</b><p>连接钱包并切换到 BSC Testnet。</p></div>
           <div><b>02</b><p>链上选择一个 Emoji 军团，每个赛季只能选择一次。</p></div>
