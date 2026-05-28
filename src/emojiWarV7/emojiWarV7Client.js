@@ -1,15 +1,6 @@
-// src/emojiWarV7/emojiWarV7Client.js
-// 保留原官网 UI 时，把原来的链上读写逻辑替换成这里的函数即可。
-
 import { ethers } from "ethers";
 import { EMOJI_WAR_V7_CONFIG } from "./config.js";
-import {
-  ERC20_ABI,
-  ARMY_V7_ABI,
-  BURN_V7_ABI,
-  VAULT_ABI,
-  REWARD_POOL_V7_ABI,
-} from "./abis.js";
+import { ERC20_ABI, ARMY_V7_ABI, BURN_V7_ABI, VAULT_ABI, REWARD_POOL_V7_ABI } from "./abis.js";
 
 export function getInjectedProvider() {
   if (!window.ethereum) {
@@ -96,6 +87,14 @@ export function shortAddress(address) {
 export function armyLabel(armyId) {
   const item = EMOJI_WAR_V7_CONFIG.armies.find((x) => Number(x.id) === Number(armyId));
   return item ? `${item.emoji} ${item.zh}` : "未选择";
+}
+
+export function formatCountdown(sec) {
+  const s = Math.max(0, Number(sec || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  return `${h}h ${m}m ${r}s`;
 }
 
 export async function readV7Dashboard(userAddress) {
@@ -221,26 +220,5 @@ export async function claimAll(seasonIds, includeRealtime = true) {
   const c = getContracts(signer);
   const cleanSeasonIds = seasonIds.map((x) => Number(x)).filter((x) => x > 0);
   const tx = await c.rewardPool.claimAll(cleanSeasonIds, Boolean(includeRealtime));
-  return tx.wait();
-}
-
-export async function adminSetActiveDepositSeason(seasonId) {
-  const { signer } = await connectWallet();
-  const c = getContracts(signer);
-  const tx = await c.rewardPool.setActiveDepositSeason(Number(seasonId));
-  return tx.wait();
-}
-
-export async function adminWithdrawVaultToRewardPool(amountBnb) {
-  const { signer } = await connectWallet();
-  const c = getContracts(signer);
-  const tx = await c.vault.withdrawToTreasury(ethers.parseEther(String(amountBnb || "0")));
-  return tx.wait();
-}
-
-export async function adminFinalizeSeason(seasonId) {
-  const { signer } = await connectWallet();
-  const c = getContracts(signer);
-  const tx = await c.rewardPool.finalizeSeason(Number(seasonId));
   return tx.wait();
 }

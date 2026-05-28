@@ -1,13 +1,10 @@
-// src/emojiWarV7/abis.js
-// V7 最小 ABI。保留原官网 UI 时，只需要把原来的 ABI 引用替换为这些即可。
-
 export const ERC20_ABI = [
   "function name() view returns (string)",
   "function symbol() view returns (string)",
   "function decimals() view returns (uint8)",
   "function balanceOf(address account) view returns (uint256)",
   "function allowance(address owner, address spender) view returns (uint256)",
-  "function approve(address spender, uint256 amount) returns (bool)",
+  "function approve(address spender, uint256 amount) returns (bool)"
 ];
 
 export const ARMY_V7_ABI = [
@@ -22,7 +19,7 @@ export const ARMY_V7_ABI = [
   "function getMyArmy() view returns (uint8)",
   "function getUserArmy(uint256 seasonId, address user) view returns (uint8)",
   "function getArmyMembers(uint256 seasonId, uint8 armyId) view returns (uint256)",
-  "function getArmyName(uint8 armyId) pure returns (string)",
+  "function getArmyName(uint8 armyId) pure returns (string)"
 ];
 
 export const BURN_V7_ABI = [
@@ -38,7 +35,7 @@ export const BURN_V7_ABI = [
   "function getTopUser(uint256 seasonId, uint8 rank) view returns (address)",
   "function getTopAmount(uint256 seasonId, uint8 rank) view returns (uint256)",
   "function getWinningArmy(uint256 seasonId) view returns (uint8 winningArmy, uint256 winningAmount)",
-  "function getCurrentSeason() view returns (uint256)",
+  "function getCurrentSeason() view returns (uint256)"
 ];
 
 export const VAULT_ABI = [
@@ -52,7 +49,7 @@ export const VAULT_ABI = [
   "function getSeasonReceived(uint256 seasonId) view returns (uint256)",
   "function getSeasonWithdrawn(uint256 seasonId) view returns (uint256)",
   "function setTreasury(address newTreasury)",
-  "function withdrawToTreasury(uint256 amount)",
+  "function withdrawToTreasury(uint256 amount)"
 ];
 
 export const REWARD_POOL_V7_ABI = [
@@ -69,5 +66,5 @@ export const REWARD_POOL_V7_ABI = [
   "function claimAll(uint256[] seasonIds, bool includeRealtime)",
   "function finalizeSeason(uint256 seasonId)",
   "function pauseClaims()",
-  "function unpauseClaims()",
+  "function unpauseClaims()"
 ];

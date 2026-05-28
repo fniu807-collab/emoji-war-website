@@ -6,9 +6,11 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "ethers": "^6.16.0",
+    "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "vite": "latest"
-  }
+    "ethers": "latest",
+    "lucide-react": "latest"
+  },
+  "devDependencies": {}
 }

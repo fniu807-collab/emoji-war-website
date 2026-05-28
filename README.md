@@ -1,109 +1,38 @@
-# Emoji War V6.1 主网 EWTEST 燃烧测试版
+# Emoji War V7 Full Replace Project
 
-这是主网测试燃烧版，不是正式 $EMOJI 版本。
+这是一个完整替换版 Vite React 官网项目。
 
-## 已接入
+## 用法
 
-- BNB Smart Chain 主网
-- 主网 Army 合约
-- 主网 EWTEST 测试币
-- 主网 Burn 合约
-- Approve 授权
-- Burn 燃烧
-- 个人燃烧量
-- 军团燃烧榜
-- 军团成员榜
+1. 备份你原来的项目。
+2. 解压本包。
+3. 把本包里面所有文件复制到 `emoji-war-website` 项目根目录。
+4. 覆盖同名文件。
+5. 在项目目录执行：
 
-## 主网地址
+```bash
+npm install
+npm run dev
+```
 
-EWTEST:
-0x1cfe9717be9d02370e3001717e5da157d35e7777
+## 当前测试配置
 
-Burn:
-0xd534Af3200adA27829EC116368C24356D6E46211
+- EWTEST: 0x1cfe9717be9d02370e3001717e5da157d35e7777
+- Army V7: 0xeB472e8863bce01C3D108477A036A7D24Fd34B38
+- Burn V7: 0x7eB94A7E2fa35d9491d1043a230B201A70052CFA
+- Vault: 0x8b55FA7273c790F1caD86cf96917AcD0469Fc515
+- RewardPool V7: 0xf354AC72248458011e5B5A28b61018B3E11908d6
 
-Army:
-0x274F9F99237a15e346de226D171c607Fb5E8ca3E
+## 正式开盘后
 
-VaultFactory:
-0x4cc87327A76430fF09Fa6879BF85BE09e03d1CBA
+只改：
 
-GMGN / Flap:
-https://gmgn.ai/bsc/token/0x1cfe9717be9d02370e3001717e5da157d35e7777
+```text
+src/emojiWarV7/config.js
+```
 
-## 更新方法
-
-1. 解压本压缩包
-2. 复制全部文件覆盖你的 `emoji-war-website`
-3. GitHub Desktop：Summary 写 `connect ewtest burn`
-4. Commit to main
-5. Push origin
-6. 等 Vercel 自动更新
-
-## 测试流程
-
-1. 打开官网
-2. 连接钱包
-3. 切到 BNB Smart Chain 主网
-4. 买少量 EWTEST
-5. 确认已经选择军团
-6. 输入燃烧数量
-7. Approve
-8. Burn
-9. 查看军团燃烧榜是否更新
+替换正式 Token、Army、Burn、Vault、RewardPool 和购买链接。
 
 ## 注意
 
-这是正式上线前彩排版本。正式 $EMOJI 创建后，需要替换：
-
-- TEST_TOKEN_ADDRESS
-- BURN_CONTRACT_ADDRESS
-- Flap 购买链接
-
-
-## V6.2 金库数据显示版
-
-新增接入真正的 EmojiWarVault 合约：
-
-```text
-0x8b55FA7273c790F1caD86cf96917AcD0469Fc515
-```
-
-新增展示：
-
-- Vault Balance 当前金库余额
-- Total Received 累计收到税收
-- Total Withdrawn 累计提现
-- Season Received 当前赛季收入
-- Season Withdrawn 当前赛季提现
-- Vault Treasury 金库提现地址
-
-
-## V6.3 RewardPool 分红领取版
-
-新增 RewardPool 合约接入：
-
-```text
-0x5E77b0208cf94EEdd4F038f15DBdC711BF3b7484
-```
-
-新增官网功能：
-
-- RewardPool Balance
-- Season Deposited
-- Season Claimed
-- My Allocation
-- My Claimed
-- My Claimable
-- Claim 按钮
-
-### Claim 前置步骤
-
-RewardPool 需要先有 BNB，并且需要 Owner / Operator 给用户设置可领取额度。
-
-测试方式：
-
-1. 在 RewardPool 合约调用 `depositForSeason(1)`，Value 填入少量 BNB，比如 `0.001`
-2. 调用 `setClaimable(1, 用户钱包地址, 1000000000000000)`
-3. 官网刷新后会显示可领取 `0.001 BNB`
-4. 点击 Claim 领取
+这个包是完整替换版。它不是你线上旧官网的 1:1 原文件修改版，但视觉会保持 Emoji War 黑金主站风格，并已经接好 V7 合约。
