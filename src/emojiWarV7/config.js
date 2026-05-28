@@ -1,0 +1,56 @@
+// src/emojiWarV7/config.js
+// Emoji War V7 测试版地址配置。
+// 目标：保留原官网 UI，只把底层合约逻辑升级到 V7。
+// 正式开盘后只需要改这个文件。
+
+export const EMOJI_WAR_V7_CONFIG = {
+  network: {
+    chainId: 56,
+    chainIdHex: "0x38",
+    name: "BNB Smart Chain",
+    rpcUrl: "https://bsc-dataseed.binance.org/",
+    explorer: "https://bscscan.com",
+    nativeCurrency: {
+      name: "BNB",
+      symbol: "BNB",
+      decimals: 18,
+    },
+  },
+
+  token: {
+    name: "Emoji War Test Token",
+    symbol: "EWTEST",
+    decimals: 18,
+    address: "0x1cfe9717be9d02370e3001717e5da157d35e7777",
+    minHoldToClaim: "500000",
+    minHoldToClaimWei: "500000000000000000000000",
+  },
+
+  contracts: {
+    vaultFactory: "0x4cc87327A76430fF09Fa6879BF85BE09e03d1CBA",
+    army: "0xeB472e8863bce01C3D108477A036A7D24Fd34B38",
+    burn: "0x7eB94A7E2fa35d9491d1043a230B201A70052CFA",
+    vault: "0x8b55FA7273c790F1caD86cf96917AcD0469Fc515",
+    rewardPool: "0xf354AC72248458011e5B5A28b61018B3E11908d6",
+  },
+
+  links: {
+    buyUrl: "https://gmgn.ai/bsc/token/0x1cfe9717be9d02370e3001717e5da157d35e7777",
+    x: "",
+    telegram: "",
+  },
+
+  armies: [
+    { id: 1, emoji: "🥷", zh: "忍者军团", en: "Ninja Army" },
+    { id: 2, emoji: "🚀", zh: "火箭军团", en: "Rocket Army" },
+    { id: 3, emoji: "💎", zh: "钻石军团", en: "Diamond Army" },
+    { id: 4, emoji: "🦋", zh: "蝴蝶军团", en: "Butterfly Army" },
+    { id: 5, emoji: "🔶", zh: "币安军团", en: "Binance Army" },
+  ],
+
+  uiText: {
+    minHoldNotice: "领取分红需要持有至少 500,000 EWTEST / EMOJI",
+    burnShareNotice: "Burn Share 有效期 7 天，只参与 Burn 之后进入池子的实时分红。",
+    binanceArmyDisclaimer: "币安军团为社区自发情绪阵营，非 Binance 官方项目，非 Binance 官方关联。",
+  },
+};

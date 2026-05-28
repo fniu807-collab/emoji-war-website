@@ -6,10 +6,9 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "ethers": "^6.16.0",
     "react": "latest",
     "react-dom": "latest",
-    "ethers": "latest"
-  },
-  "devDependencies": {}
+    "vite": "latest"
+  }
 }
