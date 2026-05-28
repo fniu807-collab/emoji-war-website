@@ -1,31 +1,46 @@
 import { useEffect, useMemo, useState } from "react";
-import { BrowserProvider, Contract } from "ethers";
+import { BrowserProvider, Contract, formatUnits, parseUnits } from "ethers";
 
-const BNB_MAINNET_CHAIN_ID = "0x38"; // 56
+const BNB_MAINNET_CHAIN_ID = "0x38";
 const BNB_MAINNET_NAME = "BNB Smart Chain";
 
 const ARMY_CONTRACT_ADDRESS = "0x274F9F99237a15e346de226D171c607Fb5E8ca3E";
 const VAULT_FACTORY_ADDRESS = "0x4cc87327A76430fF09Fa6879BF85BE09e03d1CBA";
 
-// 代币创建后再填写
-const TOKEN_CONTRACT_ADDRESS = "Coming soon";
-const BURN_CONTRACT_ADDRESS = "Coming soon";
-const VAULT_ADDRESS = "Coming soon";
+// 主网测试币，不是正式 $EMOJI
+const TEST_TOKEN_ADDRESS = "0x1cfe9717be9d02370e3001717e5da157d35e7777";
+const BURN_CONTRACT_ADDRESS = "0xd534Af3200adA27829EC116368C24356D6E46211";
+const TREASURY_ADDRESS = "0x27e6a487eab81915e428cb41c18511600b1eceea";
+
+const links = {
+  flap: "https://gmgn.ai/bsc/token/0x1cfe9717be9d02370e3001717e5da157d35e7777",
+  twitter: "#",
+  telegram: "#",
+  contract: TEST_TOKEN_ADDRESS
+};
 
 const ARMY_ABI = [
   "function currentSeason() view returns (uint256)",
   "function joinArmy(uint8 armyId)",
   "function getUserArmy(uint256 seasonId, address user) view returns (uint8)",
-  "function getArmyMembers(uint256 seasonId, uint8 armyId) view returns (uint256)",
-  "function getArmyName(uint8 armyId) pure returns (string)"
+  "function getArmyMembers(uint256 seasonId, uint8 armyId) view returns (uint256)"
 ];
 
-const links = {
-  flap: "#",      // 创建代币后填 Flap 购买链接
-  twitter: "#",   // 填项目 X 链接
-  telegram: "#",  // 填 TG 链接
-  contract: "Coming soon"
-};
+const TOKEN_ABI = [
+  "function balanceOf(address user) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)"
+];
+
+const BURN_ABI = [
+  "function burn(uint256 amount)",
+  "function getUserBurned(uint256 seasonId, address user) view returns (uint256)",
+  "function getArmyBurned(uint256 seasonId, uint8 armyId) view returns (uint256)",
+  "function getCurrentSeason() view returns (uint256)",
+  "function totalBurned() view returns (uint256)"
+];
 
 const armies = [
   { id: 1, emoji: "🥷", cn: "忍者军团", en: "Ninja Army", slogan: "隐于黑暗，燃烧出击。", desc: "隐忍、突袭、反超。真正的忍者不喊单，只在榜上出现。" },
@@ -53,9 +68,15 @@ function shortAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-function shortContract(address) {
-  if (!address || address === "Coming soon") return "Coming soon";
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+function formatAmount(value, decimals = 18) {
+  try {
+    const n = Number(formatUnits(BigInt(value || "0"), decimals));
+    if (n >= 1_000_000) return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+    return n.toLocaleString(undefined, { maximumFractionDigits: 8 });
+  } catch {
+    return "0";
+  }
 }
 
 function armyById(id) {
@@ -72,12 +93,35 @@ export default function App() {
   const [currentSeason, setCurrentSeason] = useState("1");
   const [selectedArmyId, setSelectedArmyId] = useState(0);
   const [armyMembers, setArmyMembers] = useState({});
-  const [status, setStatus] = useState("V6 主网预上线版已准备。");
+  const [armyBurns, setArmyBurns] = useState({});
+  const [tokenBalance, setTokenBalance] = useState("0");
+  const [allowance, setAllowance] = useState("0");
+  const [myBurned, setMyBurned] = useState("0");
+  const [totalBurned, setTotalBurned] = useState("0");
+  const [tokenDecimals, setTokenDecimals] = useState(18);
+  const [tokenSymbol, setTokenSymbol] = useState("EWTEST");
+  const [burnAmount, setBurnAmount] = useState("1000");
+  const [status, setStatus] = useState("V6.1 主网测试燃烧版已准备。当前使用 EWTEST 测试币。");
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("");
 
   const isMainnet = chainId?.toLowerCase() === BNB_MAINNET_CHAIN_ID;
   const selectedArmy = useMemo(() => armyById(selectedArmyId), [selectedArmyId]);
+
+  const burnAmountWei = useMemo(() => {
+    try {
+      return parseUnits(burnAmount || "0", tokenDecimals);
+    } catch {
+      return 0n;
+    }
+  }, [burnAmount, tokenDecimals]);
+
+  const needsApprove = burnAmountWei > BigInt(allowance || "0");
+
+  const rankedArmyBurns = useMemo(() => {
+    return [...armies].sort((a, b) => Number(BigInt(armyBurns[b.id] || "0") - BigInt(armyBurns[a.id] || "0")));
+  }, [armyBurns]);
+
   const rankedArmyMembers = useMemo(() => {
     return [...armies].sort((a, b) => Number(BigInt(armyMembers[b.id] || "0") - BigInt(armyMembers[a.id] || "0")));
   }, [armyMembers]);
@@ -93,7 +137,7 @@ export default function App() {
         setChainId(id);
         if (accounts?.[0]) {
           setWallet(accounts[0]);
-          if (id === BNB_MAINNET_CHAIN_ID) await loadArmyData(accounts[0]);
+          if (id === BNB_MAINNET_CHAIN_ID) await loadAllData(accounts[0]);
           else loadLocalArmyFallback(accounts[0]);
         }
       } catch {}
@@ -110,7 +154,7 @@ export default function App() {
     const handleChainChanged = async (id) => {
       const normalized = chainIdToHex(id);
       setChainId(normalized);
-      if (wallet && normalized === BNB_MAINNET_CHAIN_ID) await loadArmyData(wallet);
+      if (wallet && normalized === BNB_MAINNET_CHAIN_ID) await loadAllData(wallet);
     };
 
     injected.on?.("accountsChanged", handleAccountsChanged);
@@ -139,15 +183,15 @@ export default function App() {
     }
   }
 
-  async function getArmyContract(withSigner = false) {
+  async function getContract(address, abi, withSigner = false) {
     const injected = getInjectedProvider();
     if (!injected) throw new Error("没有检测到钱包插件。");
     const provider = new BrowserProvider(injected);
     if (withSigner) {
       const signer = await provider.getSigner();
-      return new Contract(ARMY_CONTRACT_ADDRESS, ARMY_ABI, signer);
+      return new Contract(address, abi, signer);
     }
-    return new Contract(ARMY_CONTRACT_ADDRESS, ARMY_ABI, provider);
+    return new Contract(address, abi, provider);
   }
 
   function loadLocalArmyFallback(account) {
@@ -176,8 +220,8 @@ export default function App() {
         setStatus("钱包已连接，但当前不是 BNB Smart Chain 主网。请点击切换主网。");
         loadLocalArmyFallback(account);
       } else if (account) {
-        await loadArmyData(account);
-        setStatus("钱包连接成功，主网军团数据已刷新。");
+        await loadAllData(account);
+        setStatus("钱包连接成功，主网数据已刷新。");
       }
     } catch (error) {
       setStatus(error?.message || "钱包连接失败。");
@@ -198,7 +242,7 @@ export default function App() {
       });
       setChainId(BNB_MAINNET_CHAIN_ID);
       setStatus("已切换到 BNB Smart Chain，请刷新主网数据。");
-      if (wallet) await loadArmyData(wallet);
+      if (wallet) await loadAllData(wallet);
     } catch (switchError) {
       if (switchError?.code === 4902) {
         await injected.request({
@@ -220,7 +264,7 @@ export default function App() {
     }
   }
 
-  async function loadArmyData(account = wallet) {
+  async function loadAllData(account = wallet) {
     if (!account) return setStatus("请先连接钱包。");
 
     try {
@@ -229,12 +273,22 @@ export default function App() {
       setChainId(id);
 
       if (id !== BNB_MAINNET_CHAIN_ID) {
-        setStatus("当前不是 BNB Smart Chain 主网，无法读取主网 Army 合约。");
+        setStatus("当前不是 BNB Smart Chain 主网，无法读取主网合约。");
         loadLocalArmyFallback(account);
         return;
       }
 
-      const armyContract = await getArmyContract(false);
+      const armyContract = await getContract(ARMY_CONTRACT_ADDRESS, ARMY_ABI);
+      const tokenContract = await getContract(TEST_TOKEN_ADDRESS, TOKEN_ABI);
+      const burnContract = await getContract(BURN_CONTRACT_ADDRESS, BURN_ABI);
+
+      let decimals = 18;
+      let symbol = "EWTEST";
+      try { decimals = Number(await tokenContract.decimals()); } catch {}
+      try { symbol = await tokenContract.symbol(); } catch {}
+      setTokenDecimals(decimals);
+      setTokenSymbol(symbol);
+
       const seasonId = await armyContract.currentSeason();
       setCurrentSeason(seasonId.toString());
 
@@ -243,16 +297,34 @@ export default function App() {
       const savedArmy = Number(localStorage.getItem(localArmyKey(account)) || "0");
       setSelectedArmyId(onChainArmy || savedArmy || 0);
 
+      const [balance, approved, burned, total] = await Promise.all([
+        tokenContract.balanceOf(account),
+        tokenContract.allowance(account, BURN_CONTRACT_ADDRESS),
+        burnContract.getUserBurned(seasonId, account),
+        burnContract.totalBurned()
+      ]);
+
+      setTokenBalance(balance.toString());
+      setAllowance(approved.toString());
+      setMyBurned(burned.toString());
+      setTotalBurned(total.toString());
+
       const memberData = {};
+      const burnData = {};
       for (const army of armies) {
-        const members = await armyContract.getArmyMembers(seasonId, army.id);
+        const [members, burns] = await Promise.all([
+          armyContract.getArmyMembers(seasonId, army.id),
+          burnContract.getArmyBurned(seasonId, army.id)
+        ]);
         memberData[army.id] = members.toString();
+        burnData[army.id] = burns.toString();
       }
       setArmyMembers(memberData);
+      setArmyBurns(burnData);
 
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (error) {
-      setStatus(error?.shortMessage || error?.message || "读取主网军团数据失败。");
+      setStatus(error?.shortMessage || error?.message || "读取主网数据失败。");
     } finally {
       setIsLoading(false);
     }
@@ -266,7 +338,7 @@ export default function App() {
 
     try {
       setIsLoading(true);
-      const contract = await getArmyContract(true);
+      const contract = await getContract(ARMY_CONTRACT_ADDRESS, ARMY_ABI, true);
       setStatus(`正在加入 ${army.emoji} ${army.cn}，请在钱包确认主网交易。`);
       const tx = await contract.joinArmy(armyId);
       await tx.wait();
@@ -274,10 +346,53 @@ export default function App() {
       localStorage.setItem(localArmyKey(wallet), String(armyId));
       setSelectedArmyId(armyId);
       setStatus(`主网加入成功：${army.emoji} ${army.cn}`);
-      await loadArmyData(wallet);
+      await loadAllData(wallet);
     } catch (error) {
       const msg = error?.reason || error?.shortMessage || error?.message || "交易失败。";
       setStatus(msg.includes("Already joined") ? "你本赛季已经加入过军团，不能重复选择。" : msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function approveBurnContract() {
+    if (!wallet) return setStatus("请先连接钱包。");
+    if (!isMainnet) return setStatus("请先切换到 BNB Smart Chain 主网。");
+    if (burnAmountWei <= 0n) return setStatus("请输入大于 0 的燃烧数量。");
+
+    try {
+      setIsLoading(true);
+      const token = await getContract(TEST_TOKEN_ADDRESS, TOKEN_ABI, true);
+      setStatus(`正在授权 ${burnAmount} ${tokenSymbol} 给 Burn 合约，请在钱包确认。`);
+      const tx = await token.approve(BURN_CONTRACT_ADDRESS, burnAmountWei);
+      await tx.wait();
+      setStatus(`授权成功：${burnAmount} ${tokenSymbol}`);
+      await loadAllData(wallet);
+    } catch (error) {
+      setStatus(error?.shortMessage || error?.message || "授权失败。");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function burnForArmy() {
+    if (!wallet) return setStatus("请先连接钱包。");
+    if (!selectedArmyId) return setStatus("请先链上选择军团。");
+    if (!isMainnet) return setStatus("请先切换到 BNB Smart Chain 主网。");
+    if (burnAmountWei <= 0n) return setStatus("请输入大于 0 的燃烧数量。");
+    if (needsApprove) return setStatus("授权额度不足，请先点击 Approve。");
+
+    try {
+      setIsLoading(true);
+      const burn = await getContract(BURN_CONTRACT_ADDRESS, BURN_ABI, true);
+      setStatus(`正在燃烧 ${burnAmount} ${tokenSymbol}，请在钱包确认。`);
+      const tx = await burn.burn(burnAmountWei);
+      await tx.wait();
+      setStatus(`燃烧成功：${burnAmount} ${tokenSymbol} 已计入 ${selectedArmy?.emoji} ${selectedArmy?.cn}`);
+      await loadAllData(wallet);
+    } catch (error) {
+      const msg = error?.reason || error?.shortMessage || error?.message || "燃烧失败。";
+      setStatus(msg.includes("allowance") ? "授权额度不足，请先点击 Approve 授权。" : msg);
     } finally {
       setIsLoading(false);
     }
@@ -287,47 +402,46 @@ export default function App() {
     <main>
       <section className="hero" id="top">
         <div className="nav">
-          <div className="brand"><div className="logo"><img src="/token-avatar.png" alt="Emoji War avatar" /></div><div><b>Emoji War</b><span>$EMOJI</span></div></div>
+          <div className="brand"><div className="logo tokenLogo"><img src="/token-avatar.png" alt="Emoji War avatar" /></div><div><b>Emoji War</b><span>EWTEST</span></div></div>
           <div className="navLinks">
             <a href="#join">加入军团</a>
-            <a href="#vault">金库</a>
-            <a href="#panel">成员榜</a>
-            <a href="#rules">规则</a>
+            <a href="#burn">燃烧测试</a>
+            <a href="#panel">排行榜</a>
+            <a href="#vault">合约</a>
           </div>
-          <button className="smallBtn" onClick={connectWallet}>{wallet ? shortContract(wallet) : "Connect Wallet"}</button>
+          <button className="smallBtn" onClick={connectWallet}>{wallet ? shortAddress(wallet) : "Connect Wallet"}</button>
         </div>
 
         <div className="heroGrid">
           <div className="heroText">
-            <p className="pill"><span></span>V6 Pre-Launch · BNB Mainnet</p>
+            <p className="pill"><span></span>V6.1 Mainnet Test · EWTEST</p>
             <h1>Emoji War</h1>
-            <h2>主网预上线</h2>
+            <h2>主网燃烧测试版</h2>
             <p className="lead">
-              Emoji War 正在进入正式主网阶段。军团系统已经部署，税收金库模板已经准备。
-              $EMOJI 创建完成后，燃烧冲榜将正式开启。
+              当前版本使用主网测试币 EWTEST 彩排正式流程。你可以测试：买币、选择军团、授权、燃烧、军团燃烧榜更新。
             </p>
             <div className="actions">
               <button className="primaryBtn buttonReset" onClick={connectWallet}>{wallet ? "Wallet Connected" : "Connect Wallet"}</button>
-              <button className="secondaryBtn buttonReset" onClick={() => loadArmyData(wallet)} disabled={!wallet || isLoading}>刷新主网数据</button>
+              <a className="secondaryBtn" href={links.flap} target="_blank" rel="noreferrer">Buy EWTEST</a>
+              <button className="secondaryBtn buttonReset" onClick={() => loadAllData(wallet)} disabled={!wallet || isLoading}>刷新主网数据</button>
             </div>
             <p className="note">
-              当前为预上线版本：可连接主网钱包并链上选择军团。Burn Battle 将在 $EMOJI 创建后解锁。
+              这是主网测试币版本，不是正式 $EMOJI。最后刷新：{lastUpdated || "未刷新"}
             </p>
           </div>
 
           <div className="warCard">
-            <div className="avatarPreview"><img src="/token-avatar.png" alt="Emoji War token avatar" /></div>
-            <div className="screenTitle"><span>MAINNET PRE-LAUNCH</span><b>Season {currentSeason}</b></div>
+            <div className="screenTitle"><span>MAINNET BURN TEST</span><b>Season {currentSeason}</b></div>
             <div className="armyGrid">
               {armies.map((army) => (
                 <div className={`miniArmy ${selectedArmyId === army.id ? "activeMini" : ""}`} key={army.cn}>
                   <div>{army.emoji}</div>
                   <b>{army.cn}</b>
-                  <span>{armyMembers[army.id] || "0"} members</span>
+                  <span>{formatAmount(armyBurns[army.id] || "0", tokenDecimals)} burned</span>
                 </div>
               ))}
             </div>
-            <div className="flywheel">主网军团已启动 → $EMOJI 即将创建 → 燃烧战争即将解锁</div>
+            <div className="flywheel">买 EWTEST → 选择军团 → Approve → Burn → 排行榜更新</div>
           </div>
         </div>
       </section>
@@ -336,17 +450,18 @@ export default function App() {
         <div className="sectionHead">
           <p>Step 1</p>
           <h2>主网选择你的军团</h2>
-          <span>Army 合约已部署在 BNB Smart Chain 主网。用户可以提前加入军团，正式开币后参与燃烧冲榜。</span>
+          <span>Army 合约已部署在 BNB Smart Chain 主网。每个钱包每个赛季只能选择一次军团。</span>
         </div>
 
         <div className="walletPanel">
           <div className="walletStatus">
             <div className="statusTop"><span>Wallet Status</span><b>{wallet ? "Connected" : "Not Connected"}</b></div>
-            <h3>{wallet ? shortContract(wallet) : "Connect Wallet"}</h3>
+            <h3>{wallet ? shortAddress(wallet) : "Connect Wallet"}</h3>
             <p>Network: {isMainnet ? "BNB Smart Chain" : chainId ? `Wrong Network (${chainId})` : "Not connected"}</p>
             <p>Army: {selectedArmy ? `${selectedArmy.emoji} ${selectedArmy.cn}` : "Not selected on-chain"}</p>
+            <p>Balance: {formatAmount(tokenBalance, tokenDecimals)} {tokenSymbol}</p>
+            <p>My Burn: {formatAmount(myBurned, tokenDecimals)} {tokenSymbol}</p>
             <p>Current Season: {currentSeason}</p>
-            <p>Last Updated: {lastUpdated || "未刷新"}</p>
             {status && <div className="statusMessage">{status}</div>}
             <div className="walletActions">
               <button className="primaryBtn buttonReset" onClick={connectWallet} disabled={isLoading}>{isLoading ? "Processing..." : "Connect / Refresh"}</button>
@@ -363,43 +478,7 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <p className="chooseHint">每个钱包每个赛季只能选择一次军团。选择后，本赛季不能更换。</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="vault" className="section vaultSection">
-        <div className="sectionHead">
-          <p>Emoji War Season Vault</p>
-          <h2>税收金库模板已准备</h2>
-          <span>Flap 自定义税收模板已经部署到 BNB 主网。创建 $EMOJI 时，交易税可以进入 Emoji War Season Vault。</span>
-        </div>
-
-        <div className="vaultGrid">
-          <div className="vaultBox ready">
-            <span>VaultFactory</span>
-            <b>{shortContract(VAULT_FACTORY_ADDRESS)}</b>
-            <p>{VAULT_FACTORY_ADDRESS}</p>
-          </div>
-          <div className="vaultBox ready">
-            <span>Army Contract</span>
-            <b>{shortContract(ARMY_CONTRACT_ADDRESS)}</b>
-            <p>{ARMY_CONTRACT_ADDRESS}</p>
-          </div>
-          <div className="vaultBox locked">
-            <span>$EMOJI Token</span>
-            <b>{TOKEN_CONTRACT_ADDRESS}</b>
-            <p>创建代币后填写正式 CA</p>
-          </div>
-          <div className="vaultBox locked">
-            <span>Burn Contract</span>
-            <b>{BURN_CONTRACT_ADDRESS}</b>
-            <p>$EMOJI 创建后再部署</p>
-          </div>
-          <div className="vaultBox locked">
-            <span>Season Vault</span>
-            <b>{VAULT_ADDRESS}</b>
-            <p>Flap 创建代币时自动创建</p>
+            <p className="chooseHint">如果你已经在主网选过军团，本赛季不能更换。</p>
           </div>
         </div>
       </section>
@@ -407,18 +486,31 @@ export default function App() {
       <section id="burn" className="section burnSection">
         <div className="sectionHead">
           <p>Step 2</p>
-          <h2>Burn Battle 即将解锁</h2>
-          <span>$EMOJI 正式创建后，将部署 Burn 合约并开启军团燃烧冲榜。</span>
+          <h2>燃烧 EWTEST 冲榜</h2>
+          <span>先 Approve 授权 Burn 合约，再 Burn 燃烧。燃烧后自动计入个人燃烧量和军团燃烧量。</span>
         </div>
-        <div className="lockedPanel">
-          <div className="lockIcon">🔒</div>
-          <h3>Burn Battle Locked</h3>
-          <p>等待 $EMOJI 创建完成后解锁。</p>
-          <div className="lockedSteps">
-            <div>1. Flap 创建 $EMOJI</div>
-            <div>2. 获取正式代币地址</div>
-            <div>3. 部署主网 Burn 合约</div>
-            <div>4. 官网升级到 V6.1 正式燃烧版</div>
+
+        <div className="burnPanel">
+          <div className="burnBox">
+            <h3>Burn to Fight</h3>
+            <label>燃烧数量</label>
+            <input value={burnAmount} onChange={(e) => setBurnAmount(e.target.value.replace(/[^\d]/g, ""))} placeholder="1000" />
+            <div className="burnStats">
+              <div><p>授权额度</p><b>{formatAmount(allowance, tokenDecimals)} {tokenSymbol}</b></div>
+              <div><p>全赛季总燃烧</p><b>{formatAmount(totalBurned, tokenDecimals)} {tokenSymbol}</b></div>
+            </div>
+            <div className="walletActions">
+              <button className="secondaryBtn buttonReset" onClick={approveBurnContract} disabled={isLoading || burnAmountWei <= 0n}>Approve</button>
+              <button className="primaryBtn buttonReset" onClick={burnForArmy} disabled={isLoading || burnAmountWei <= 0n || needsApprove}>Burn</button>
+            </div>
+            <p className="chooseHint">{needsApprove ? "当前授权额度不足，请先点击 Approve。" : "授权额度足够，可以点击 Burn。"}</p>
+          </div>
+
+          <div className="burnBox">
+            <h3>测试币说明</h3>
+            <p>当前接入的是 EWTEST 主网测试币，用来彩排正式 $EMOJI 流程。</p>
+            <p>正式上线时，这里的 EWTEST 会替换成 $EMOJI。</p>
+            <a className="secondaryBtn inlineLink" href={links.flap} target="_blank" rel="noreferrer">Buy EWTEST</a>
           </div>
         </div>
       </section>
@@ -426,10 +518,22 @@ export default function App() {
       <section id="panel" className="section panelSection">
         <div className="sectionHead">
           <p>War Dashboard</p>
-          <h2>Season {currentSeason} 军团成员榜</h2>
-          <span>预上线阶段先展示主网军团成员数。燃烧榜将在 $EMOJI 创建后开启。</span>
+          <h2>Season {currentSeason} 燃烧排行榜</h2>
+          <span>军团成员数和燃烧数据均从 BNB Smart Chain 主网合约读取。</span>
         </div>
+
         <div className="rankingGrid">
+          <div className="rankingCard">
+            <div className="rankingHead"><h3>军团燃烧榜</h3><span>Army Burn Ranking</span></div>
+            {rankedArmyBurns.map((army, index) => (
+              <div className="armyRow" key={army.cn}>
+                <div className="rankBadge">{index + 1}</div>
+                <div className="armyName"><span>{army.emoji}</span><div><b>{army.cn}</b><p>{army.en}</p></div></div>
+                <div className="armyBurn"><b>{formatAmount(armyBurns[army.id] || "0", tokenDecimals)}</b><p>{tokenSymbol} burned</p></div>
+              </div>
+            ))}
+          </div>
+
           <div className="rankingCard">
             <div className="rankingHead"><h3>军团成员榜</h3><span>Army Members</span></div>
             {rankedArmyMembers.map((army, index) => (
@@ -440,22 +544,27 @@ export default function App() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
 
-          <div className="rankingCard">
-            <div className="rankingHead"><h3>燃烧榜</h3><span>Coming Soon</span></div>
-            {armies.map((army, index) => (
-              <div className="armyRow" key={army.cn}>
-                <div className="rankBadge">{index + 1}</div>
-                <div className="armyName"><span>{army.emoji}</span><div><b>{army.cn}</b><p>{army.en}</p></div></div>
-                <div className="armyBurn"><b>Locked</b><p>after launch</p></div>
-              </div>
-            ))}
-          </div>
+      <section id="vault" className="section vaultSection">
+        <div className="sectionHead">
+          <p>Contracts</p>
+          <h2>主网测试合约</h2>
+          <span>这些是当前主网测试流程使用的合约地址。正式上线时会替换为正式 $EMOJI 地址。</span>
+        </div>
+
+        <div className="vaultGrid">
+          <div className="vaultBox ready"><span>EWTEST Token</span><b>{shortAddress(TEST_TOKEN_ADDRESS)}</b><p>{TEST_TOKEN_ADDRESS}</p></div>
+          <div className="vaultBox ready"><span>Burn Contract</span><b>{shortAddress(BURN_CONTRACT_ADDRESS)}</b><p>{BURN_CONTRACT_ADDRESS}</p></div>
+          <div className="vaultBox ready"><span>Army Contract</span><b>{shortAddress(ARMY_CONTRACT_ADDRESS)}</b><p>{ARMY_CONTRACT_ADDRESS}</p></div>
+          <div className="vaultBox ready"><span>VaultFactory</span><b>{shortAddress(VAULT_FACTORY_ADDRESS)}</b><p>{VAULT_FACTORY_ADDRESS}</p></div>
+          <div className="vaultBox locked"><span>Treasury / Vault Info</span><b>{shortAddress(TREASURY_ADDRESS)}</b><p>{TREASURY_ADDRESS}</p></div>
         </div>
       </section>
 
       <section id="armies" className="section dark">
-        <div className="sectionHead"><p>Five Armies</p><h2>五大 Emoji 军团</h2><span>选择你的情绪身份，等待 $EMOJI 燃烧战争开启。</span></div>
+        <div className="sectionHead"><p>Five Armies</p><h2>五大 Emoji 军团</h2><span>选择你的情绪身份，燃烧冲击排行榜。</span></div>
         <div className="cards">
           {armies.map((army) => (
             <article className={`card ${selectedArmyId === army.id ? "selectedCard" : ""}`} key={army.cn}>
@@ -466,28 +575,28 @@ export default function App() {
       </section>
 
       <section id="rules" className="section dark">
-        <div className="sectionHead"><p>Rules</p><h2>预上线规则</h2><span>V6 先开放主网军团选择，V6.1 再开放正式燃烧冲榜。</span></div>
+        <div className="sectionHead"><p>Rules</p><h2>主网测试规则</h2><span>这是正式上线前的主网彩排版本。</span></div>
         <div className="rulesList">
           <div><b>01</b><p>连接钱包并切换到 BNB Smart Chain 主网。</p></div>
-          <div><b>02</b><p>链上选择一个 Emoji 军团，每个赛季只能选择一次。</p></div>
-          <div><b>03</b><p>Flap 创建 $EMOJI 后，交易税进入 Emoji War Season Vault。</p></div>
-          <div><b>04</b><p>$EMOJI 创建后部署 Burn 合约，开启正式燃烧冲榜。</p></div>
-          <div><b>05</b><p>币安军团为社区自发情绪阵营，非 Binance 官方项目，非 Binance 官方关联。</p></div>
+          <div><b>02</b><p>在 Flap / GMGN 页面买入少量 EWTEST 测试币。</p></div>
+          <div><b>03</b><p>链上选择一个 Emoji 军团，每个赛季只能选择一次。</p></div>
+          <div><b>04</b><p>Approve 授权 Burn 合约后，点击 Burn 燃烧 EWTEST。</p></div>
+          <div><b>05</b><p>测试通过后，正式上线时替换为 $EMOJI。</p></div>
         </div>
         <div className="quote"><h2>不是谁喊得响，谁赢。是谁烧得多，谁赢。</h2><p>情绪上链，燃烧开战。</p></div>
       </section>
 
       <footer>
         <div>
-          <b>Emoji War / $EMOJI</b>
-          <p>Community meme project. Not affiliated with Binance.</p>
-          <p>VaultFactory: {VAULT_FACTORY_ADDRESS}</p>
-          <p>Army: {ARMY_CONTRACT_ADDRESS}</p>
+          <b>Emoji War / EWTEST</b>
+          <p>Mainnet test version. Not official $EMOJI.</p>
+          <p>Token: {TEST_TOKEN_ADDRESS}</p>
+          <p>Burn: {BURN_CONTRACT_ADDRESS}</p>
         </div>
         <div className="footerLinks">
           <a href={links.twitter}>X / Twitter</a>
           <a href={links.telegram}>Telegram</a>
-          <a href={links.flap}>Flap</a>
+          <a href={links.flap} target="_blank" rel="noreferrer">Buy EWTEST</a>
         </div>
       </footer>
     </main>
