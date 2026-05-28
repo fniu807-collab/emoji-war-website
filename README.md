@@ -37,3 +37,19 @@ Army:
 4. Commit to main
 5. Push origin
 6. 等 Vercel 自动更新
+
+
+## V6 Avatar 更新
+
+已加入代币头像：
+
+```text
+public/token-avatar.png
+```
+
+已更新：
+
+- 网站左上角 Logo
+- 首页战斗面板头像展示
+- 浏览器 favicon
+- og:image / twitter:image

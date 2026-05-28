@@ -287,7 +287,7 @@ export default function App() {
     <main>
       <section className="hero" id="top">
         <div className="nav">
-          <div className="brand"><div className="logo">🔥</div><div><b>Emoji War</b><span>$EMOJI</span></div></div>
+          <div className="brand"><div className="logo"><img src="/token-avatar.png" alt="Emoji War avatar" /></div><div><b>Emoji War</b><span>$EMOJI</span></div></div>
           <div className="navLinks">
             <a href="#join">加入军团</a>
             <a href="#vault">金库</a>
@@ -316,6 +316,7 @@ export default function App() {
           </div>
 
           <div className="warCard">
+            <div className="avatarPreview"><img src="/token-avatar.png" alt="Emoji War token avatar" /></div>
             <div className="screenTitle"><span>MAINNET PRE-LAUNCH</span><b>Season {currentSeason}</b></div>
             <div className="armyGrid">
               {armies.map((army) => (
