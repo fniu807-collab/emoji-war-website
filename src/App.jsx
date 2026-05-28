@@ -12,6 +12,7 @@ const TEST_TOKEN_ADDRESS = "0x1cfe9717be9d02370e3001717e5da157d35e7777";
 const BURN_CONTRACT_ADDRESS = "0xd534Af3200adA27829EC116368C24356D6E46211";
 const TREASURY_ADDRESS = "0x27e6a487eab81915e428cb41c18511600b1eceea";
 const EMOJI_WAR_VAULT_ADDRESS = "0x8b55FA7273c790F1caD86cf96917AcD0469Fc515";
+const REWARD_POOL_ADDRESS = "0x5E77b0208cf94EEdd4F038f15DBdC711BF3b7484";
 
 const links = {
   flap: "https://gmgn.ai/bsc/token/0x1cfe9717be9d02370e3001717e5da157d35e7777",
@@ -51,6 +52,19 @@ const VAULT_ABI = [
   "function treasury() view returns (address)",
   "function getSeasonReceived(uint256 seasonId) view returns (uint256)",
   "function getSeasonWithdrawn(uint256 seasonId) view returns (uint256)"
+];
+
+const REWARD_POOL_ABI = [
+  "function getPoolBalance() view returns (uint256)",
+  "function getClaimable(uint256 seasonId, address user) view returns (uint256)",
+  "function claimed(uint256 seasonId, address user) view returns (uint256)",
+  "function claimable(uint256 seasonId, address user) view returns (uint256)",
+  "function seasonDeposited(uint256 seasonId) view returns (uint256)",
+  "function seasonClaimed(uint256 seasonId) view returns (uint256)",
+  "function totalDeposited() view returns (uint256)",
+  "function totalClaimed() view returns (uint256)",
+  "function activeDepositSeason() view returns (uint256)",
+  "function claim(uint256 seasonId)"
 ];
 
 const armies = [
@@ -124,6 +138,14 @@ export default function App() {
   const [vaultSeasonReceived, setVaultSeasonReceived] = useState("0");
   const [vaultSeasonWithdrawn, setVaultSeasonWithdrawn] = useState("0");
   const [vaultTreasury, setVaultTreasury] = useState(TREASURY_ADDRESS);
+  const [rewardPoolBalance, setRewardPoolBalance] = useState("0");
+  const [rewardTotalDeposited, setRewardTotalDeposited] = useState("0");
+  const [rewardTotalClaimed, setRewardTotalClaimed] = useState("0");
+  const [rewardSeasonDeposited, setRewardSeasonDeposited] = useState("0");
+  const [rewardSeasonClaimed, setRewardSeasonClaimed] = useState("0");
+  const [myClaimableReward, setMyClaimableReward] = useState("0");
+  const [myClaimedReward, setMyClaimedReward] = useState("0");
+  const [myTotalAllocation, setMyTotalAllocation] = useState("0");
   const [tokenDecimals, setTokenDecimals] = useState(18);
   const [tokenSymbol, setTokenSymbol] = useState("EWTEST");
   const [burnAmount, setBurnAmount] = useState("1000");
@@ -308,6 +330,7 @@ export default function App() {
       const tokenContract = await getContract(TEST_TOKEN_ADDRESS, TOKEN_ABI);
       const burnContract = await getContract(BURN_CONTRACT_ADDRESS, BURN_ABI);
       const vaultContract = await getContract(EMOJI_WAR_VAULT_ADDRESS, VAULT_ABI);
+      const rewardPoolContract = await getContract(REWARD_POOL_ADDRESS, REWARD_POOL_ABI);
 
       let decimals = 18;
       let symbol = "EWTEST";
@@ -365,6 +388,46 @@ export default function App() {
         setVaultTotalWithdrawn("0");
         setVaultSeasonReceived("0");
         setVaultSeasonWithdrawn("0");
+      }
+
+      try {
+        const [
+          poolBal,
+          totalDeposit,
+          totalClaimedAmount,
+          seasonDeposit,
+          seasonClaimedAmount,
+          userClaimable,
+          userClaimed,
+          userAllocation
+        ] = await Promise.all([
+          rewardPoolContract.getPoolBalance(),
+          rewardPoolContract.totalDeposited(),
+          rewardPoolContract.totalClaimed(),
+          rewardPoolContract.seasonDeposited(seasonId),
+          rewardPoolContract.seasonClaimed(seasonId),
+          rewardPoolContract.getClaimable(seasonId, account),
+          rewardPoolContract.claimed(seasonId, account),
+          rewardPoolContract.claimable(seasonId, account)
+        ]);
+
+        setRewardPoolBalance(poolBal.toString());
+        setRewardTotalDeposited(totalDeposit.toString());
+        setRewardTotalClaimed(totalClaimedAmount.toString());
+        setRewardSeasonDeposited(seasonDeposit.toString());
+        setRewardSeasonClaimed(seasonClaimedAmount.toString());
+        setMyClaimableReward(userClaimable.toString());
+        setMyClaimedReward(userClaimed.toString());
+        setMyTotalAllocation(userAllocation.toString());
+      } catch {
+        setRewardPoolBalance("0");
+        setRewardTotalDeposited("0");
+        setRewardTotalClaimed("0");
+        setRewardSeasonDeposited("0");
+        setRewardSeasonClaimed("0");
+        setMyClaimableReward("0");
+        setMyClaimedReward("0");
+        setMyTotalAllocation("0");
       }
 
       const memberData = {};
@@ -456,6 +519,26 @@ export default function App() {
     }
   }
 
+  async function claimReward() {
+    if (!wallet) return setStatus("请先连接钱包。");
+    if (!isMainnet) return setStatus("请先切换到 BNB Smart Chain 主网。");
+    if (BigInt(myClaimableReward || "0") <= 0n) return setStatus("当前没有可领取分红。");
+
+    try {
+      setIsLoading(true);
+      const rewardPool = await getContract(REWARD_POOL_ADDRESS, REWARD_POOL_ABI, true);
+      setStatus(`正在领取 Season ${currentSeason} 分红，请在钱包确认。`);
+      const tx = await rewardPool.claim(BigInt(currentSeason));
+      await tx.wait();
+      setStatus("领取成功，BNB 已发送到你的钱包。");
+      await loadAllData(wallet);
+    } catch (error) {
+      setStatus(error?.shortMessage || error?.reason || error?.message || "领取失败。");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <main>
       <section className="hero" id="top">
@@ -464,6 +547,7 @@ export default function App() {
           <div className="navLinks">
             <a href="#join">加入军团</a>
             <a href="#burn">燃烧测试</a>
+            <a href="#rewards">领取分红</a>
             <a href="#panel">排行榜</a>
             <a href="#vault">合约</a>
           </div>
@@ -605,6 +689,39 @@ export default function App() {
         </div>
       </section>
 
+      <section id="rewards" className="section rewardSection">
+        <div className="sectionHead">
+          <p>RewardPool</p>
+          <h2>税收分红领取</h2>
+          <span>这里读取 EmojiWarRewardPool。项目方/Operator 设置你的可领取额度后，你可以点击 Claim 领取 BNB。</span>
+        </div>
+
+        <div className="rewardPanel">
+          <div className="rewardClaimBox">
+            <div className="rewardIcon">💰</div>
+            <h3>Claim Season {currentSeason} Reward</h3>
+            <p>可领取 BNB：</p>
+            <b>{formatBNB(myClaimableReward)} BNB</b>
+            <div className="walletActions">
+              <button className="primaryBtn buttonReset" onClick={claimReward} disabled={isLoading || BigInt(myClaimableReward || "0") <= 0n}>Claim</button>
+              <button className="secondaryBtn buttonReset" onClick={() => loadAllData(wallet)} disabled={!wallet || isLoading}>刷新分红数据</button>
+            </div>
+            <p className="chooseHint">如果显示 0，说明当前钱包还没有被设置可领取额度，或已经领取完。</p>
+          </div>
+
+          <div className="rewardStatsGrid">
+            <div className="rewardStat highlight"><span>Pool Balance</span><b>{formatBNB(rewardPoolBalance)} BNB</b><p>RewardPool 当前余额</p></div>
+            <div className="rewardStat"><span>My Allocation</span><b>{formatBNB(myTotalAllocation)} BNB</b><p>本赛季总分配额度</p></div>
+            <div className="rewardStat"><span>My Claimed</span><b>{formatBNB(myClaimedReward)} BNB</b><p>我已领取金额</p></div>
+            <div className="rewardStat"><span>Season Deposited</span><b>{formatBNB(rewardSeasonDeposited)} BNB</b><p>当前赛季注入分红池</p></div>
+            <div className="rewardStat"><span>Season Claimed</span><b>{formatBNB(rewardSeasonClaimed)} BNB</b><p>当前赛季已领取</p></div>
+            <div className="rewardStat"><span>Total Deposited</span><b>{formatBNB(rewardTotalDeposited)} BNB</b><p>累计注入分红池</p></div>
+            <div className="rewardStat"><span>Total Claimed</span><b>{formatBNB(rewardTotalClaimed)} BNB</b><p>累计领取</p></div>
+            <div className="rewardStat"><span>RewardPool</span><b>{shortAddress(REWARD_POOL_ADDRESS)}</b><p>{REWARD_POOL_ADDRESS}</p></div>
+          </div>
+        </div>
+      </section>
+
       <section id="vault" className="section vaultSection">
         <div className="sectionHead">
           <p>EmojiWarVault</p>
@@ -626,6 +743,7 @@ export default function App() {
           <div className="vaultBox ready"><span>EWTEST Token</span><b>{shortAddress(TEST_TOKEN_ADDRESS)}</b><p>{TEST_TOKEN_ADDRESS}</p></div>
           <div className="vaultBox ready"><span>Burn Contract</span><b>{shortAddress(BURN_CONTRACT_ADDRESS)}</b><p>{BURN_CONTRACT_ADDRESS}</p></div>
           <div className="vaultBox ready"><span>VaultFactory</span><b>{shortAddress(VAULT_FACTORY_ADDRESS)}</b><p>{VAULT_FACTORY_ADDRESS}</p></div>
+          <div className="vaultBox ready"><span>RewardPool</span><b>{shortAddress(REWARD_POOL_ADDRESS)}</b><p>{REWARD_POOL_ADDRESS}</p></div>
         </div>
       </section>
 
@@ -647,7 +765,8 @@ export default function App() {
           <div><b>02</b><p>在 Flap / GMGN 页面买入少量 EWTEST 测试币。</p></div>
           <div><b>03</b><p>链上选择一个 Emoji 军团，每个赛季只能选择一次。</p></div>
           <div><b>04</b><p>Approve 授权 Burn 合约后，点击 Burn 燃烧 EWTEST。</p></div>
-          <div><b>05</b><p>测试通过后，正式上线时替换为 $EMOJI。</p></div>
+          <div><b>05</b><p>Operator 设置分红额度后，用户可点击 Claim 领取 BNB。</p></div>
+          <div><b>06</b><p>测试通过后，正式上线时替换为 $EMOJI。</p></div>
         </div>
         <div className="quote"><h2>不是谁喊得响，谁赢。是谁烧得多，谁赢。</h2><p>情绪上链，燃烧开战。</p></div>
       </section>
@@ -659,6 +778,7 @@ export default function App() {
           <p>Token: {TEST_TOKEN_ADDRESS}</p>
           <p>Burn: {BURN_CONTRACT_ADDRESS}</p>
           <p>Vault: {EMOJI_WAR_VAULT_ADDRESS}</p>
+          <p>RewardPool: {REWARD_POOL_ADDRESS}</p>
         </div>
         <div className="footerLinks">
           <a href={links.twitter}>X / Twitter</a>

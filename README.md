@@ -77,3 +77,33 @@ https://gmgn.ai/bsc/token/0x1cfe9717be9d02370e3001717e5da157d35e7777
 - Season Received 当前赛季收入
 - Season Withdrawn 当前赛季提现
 - Vault Treasury 金库提现地址
+
+
+## V6.3 RewardPool 分红领取版
+
+新增 RewardPool 合约接入：
+
+```text
+0x5E77b0208cf94EEdd4F038f15DBdC711BF3b7484
+```
+
+新增官网功能：
+
+- RewardPool Balance
+- Season Deposited
+- Season Claimed
+- My Allocation
+- My Claimed
+- My Claimable
+- Claim 按钮
+
+### Claim 前置步骤
+
+RewardPool 需要先有 BNB，并且需要 Owner / Operator 给用户设置可领取额度。
+
+测试方式：
+
+1. 在 RewardPool 合约调用 `depositForSeason(1)`，Value 填入少量 BNB，比如 `0.001`
+2. 调用 `setClaimable(1, 用户钱包地址, 1000000000000000)`
+3. 官网刷新后会显示可领取 `0.001 BNB`
+4. 点击 Claim 领取
