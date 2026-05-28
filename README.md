@@ -1,33 +1,32 @@
-# Emoji War 链上军团绑定 V4
+# Emoji War / $EMOJI 燃烧冲榜 V5
 
-测试网军团合约地址：
+这是 BSC Testnet 测试网版本。
 
-```text
-0x1579fe91f42caD600a9A3484F4eeA154D00eB0b3
-```
+已接入三个测试合约：
+
+- Army Contract: 0x1579fe91f42caD600a9A3484F4eeA154D00eB0b3
+- tEMOJI Test Token: 0xb25519Cf970aE1A12f5F3b288a560C03AEE4DF1D
+- Burn Contract: 0xe1082C0D733907B76Ce8B4B995D1CA0dA8B7f795
 
 新增功能：
 
-- 连接钱包
-- 自动切换 BSC Testnet
-- 读取 currentSeason
-- 读取用户链上军团身份
-- 读取五大军团成员数
-- 点击军团按钮调用 joinArmy(armyId)
-- 钱包确认后军团身份写入链上
+- 读取 tEMOJI 余额
+- 读取授权额度
+- Approve 授权燃烧合约
+- Burn 燃烧 tEMOJI
+- 读取个人燃烧量
+- 读取军团燃烧榜
+- 读取全赛季总燃烧量
 
-## 更新网站
+## 更新方法
 
-1. 下载并解压这个压缩包
-2. 打开 `emoji-war-chain-v4`
-3. 复制里面所有文件
-4. 粘贴覆盖电脑里的 `emoji-war-website`
-5. 打开 GitHub Desktop
-6. Summary 写：connect army contract
-7. 点击 Commit to main
-8. 点击 Push origin
-9. 等 Vercel 自动更新
+1. 解压本压缩包
+2. 复制全部文件覆盖你的 `emoji-war-website`
+3. GitHub Desktop：Summary 写 `connect burn contract`
+4. Commit to main
+5. Push origin
+6. Vercel 自动更新
 
 ## 注意
 
-当前是 BSC Testnet 测试网版本，不是主网版本。正式上线主网时，需要重新部署主网合约，并替换 App.jsx 里的 `ARMY_CONTRACT_ADDRESS` 和链 ID。
+这是测试网版本。正式主网需要重新部署正式合约，并替换地址和网络参数。
