@@ -7,10 +7,10 @@ const armies = [
 ];
 
 const links = {
-  flap: "#",       // 发币后把 # 替换成 Flap 买币链接
+  flap: "https://gmgn.ai/bsc/token/0x8bd496488ebe7338a0f3de7d3943947ae0a27777",       // 发币后把 # 替换成 Flap 买币链接
   twitter: "#",    // 把 # 替换成 X / Twitter 链接
   telegram: "#",   // 把 # 替换成 Telegram 链接
-  contract: "Coming soon" // 发币后替换成合约地址
+  contract: "0x8bd496488ebe7338a0f3de7d3943947ae0a27777" // 发币后替换成合约地址
 };
 
 export default function App() {
