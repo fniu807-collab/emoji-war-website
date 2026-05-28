@@ -59,3 +59,21 @@ https://gmgn.ai/bsc/token/0x1cfe9717be9d02370e3001717e5da157d35e7777
 - TEST_TOKEN_ADDRESS
 - BURN_CONTRACT_ADDRESS
 - Flap 购买链接
+
+
+## V6.2 金库数据显示版
+
+新增接入真正的 EmojiWarVault 合约：
+
+```text
+0x8b55FA7273c790F1caD86cf96917AcD0469Fc515
+```
+
+新增展示：
+
+- Vault Balance 当前金库余额
+- Total Received 累计收到税收
+- Total Withdrawn 累计提现
+- Season Received 当前赛季收入
+- Season Withdrawn 当前赛季提现
+- Vault Treasury 金库提现地址

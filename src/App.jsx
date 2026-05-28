@@ -11,6 +11,7 @@ const VAULT_FACTORY_ADDRESS = "0x4cc87327A76430fF09Fa6879BF85BE09e03d1CBA";
 const TEST_TOKEN_ADDRESS = "0x1cfe9717be9d02370e3001717e5da157d35e7777";
 const BURN_CONTRACT_ADDRESS = "0xd534Af3200adA27829EC116368C24356D6E46211";
 const TREASURY_ADDRESS = "0x27e6a487eab81915e428cb41c18511600b1eceea";
+const EMOJI_WAR_VAULT_ADDRESS = "0x8b55FA7273c790F1caD86cf96917AcD0469Fc515";
 
 const links = {
   flap: "https://gmgn.ai/bsc/token/0x1cfe9717be9d02370e3001717e5da157d35e7777",
@@ -40,6 +41,16 @@ const BURN_ABI = [
   "function getArmyBurned(uint256 seasonId, uint8 armyId) view returns (uint256)",
   "function getCurrentSeason() view returns (uint256)",
   "function totalBurned() view returns (uint256)"
+];
+
+const VAULT_ABI = [
+  "function getVaultBalance() view returns (uint256)",
+  "function totalReceived() view returns (uint256)",
+  "function totalWithdrawn() view returns (uint256)",
+  "function currentSeason() view returns (uint256)",
+  "function treasury() view returns (address)",
+  "function getSeasonReceived(uint256 seasonId) view returns (uint256)",
+  "function getSeasonWithdrawn(uint256 seasonId) view returns (uint256)"
 ];
 
 const armies = [
@@ -79,6 +90,15 @@ function formatAmount(value, decimals = 18) {
   }
 }
 
+function formatBNB(value) {
+  try {
+    const n = Number(formatUnits(BigInt(value || "0"), 18));
+    return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
+  } catch {
+    return "0";
+  }
+}
+
 function armyById(id) {
   return armies.find((army) => army.id === Number(id));
 }
@@ -98,6 +118,12 @@ export default function App() {
   const [allowance, setAllowance] = useState("0");
   const [myBurned, setMyBurned] = useState("0");
   const [totalBurned, setTotalBurned] = useState("0");
+  const [vaultBalance, setVaultBalance] = useState("0");
+  const [vaultTotalReceived, setVaultTotalReceived] = useState("0");
+  const [vaultTotalWithdrawn, setVaultTotalWithdrawn] = useState("0");
+  const [vaultSeasonReceived, setVaultSeasonReceived] = useState("0");
+  const [vaultSeasonWithdrawn, setVaultSeasonWithdrawn] = useState("0");
+  const [vaultTreasury, setVaultTreasury] = useState(TREASURY_ADDRESS);
   const [tokenDecimals, setTokenDecimals] = useState(18);
   const [tokenSymbol, setTokenSymbol] = useState("EWTEST");
   const [burnAmount, setBurnAmount] = useState("1000");
@@ -281,6 +307,7 @@ export default function App() {
       const armyContract = await getContract(ARMY_CONTRACT_ADDRESS, ARMY_ABI);
       const tokenContract = await getContract(TEST_TOKEN_ADDRESS, TOKEN_ABI);
       const burnContract = await getContract(BURN_CONTRACT_ADDRESS, BURN_ABI);
+      const vaultContract = await getContract(EMOJI_WAR_VAULT_ADDRESS, VAULT_ABI);
 
       let decimals = 18;
       let symbol = "EWTEST";
@@ -308,6 +335,37 @@ export default function App() {
       setAllowance(approved.toString());
       setMyBurned(burned.toString());
       setTotalBurned(total.toString());
+
+      try {
+        const [
+          vaultBal,
+          vaultReceived,
+          vaultWithdrawn,
+          vaultSeasonIn,
+          vaultSeasonOut,
+          vaultTreasuryAddress
+        ] = await Promise.all([
+          vaultContract.getVaultBalance(),
+          vaultContract.totalReceived(),
+          vaultContract.totalWithdrawn(),
+          vaultContract.getSeasonReceived(seasonId),
+          vaultContract.getSeasonWithdrawn(seasonId),
+          vaultContract.treasury()
+        ]);
+
+        setVaultBalance(vaultBal.toString());
+        setVaultTotalReceived(vaultReceived.toString());
+        setVaultTotalWithdrawn(vaultWithdrawn.toString());
+        setVaultSeasonReceived(vaultSeasonIn.toString());
+        setVaultSeasonWithdrawn(vaultSeasonOut.toString());
+        setVaultTreasury(vaultTreasuryAddress);
+      } catch {
+        setVaultBalance("0");
+        setVaultTotalReceived("0");
+        setVaultTotalWithdrawn("0");
+        setVaultSeasonReceived("0");
+        setVaultSeasonWithdrawn("0");
+      }
 
       const memberData = {};
       const burnData = {};
@@ -418,7 +476,7 @@ export default function App() {
             <h1>Emoji War</h1>
             <h2>主网燃烧测试版</h2>
             <p className="lead">
-              当前版本使用主网测试币 EWTEST 彩排正式流程。你可以测试：买币、选择军团、授权、燃烧、军团燃烧榜更新。
+              当前版本使用主网测试币 EWTEST 彩排正式流程。你可以测试：买币、选择军团、授权、燃烧、军团燃烧榜更新、税收金库读取。
             </p>
             <div className="actions">
               <button className="primaryBtn buttonReset" onClick={connectWallet}>{wallet ? "Wallet Connected" : "Connect Wallet"}</button>
@@ -549,17 +607,25 @@ export default function App() {
 
       <section id="vault" className="section vaultSection">
         <div className="sectionHead">
-          <p>Contracts</p>
-          <h2>主网测试合约</h2>
-          <span>这些是当前主网测试流程使用的合约地址。正式上线时会替换为正式 $EMOJI 地址。</span>
+          <p>EmojiWarVault</p>
+          <h2>税收金库实时数据</h2>
+          <span>这里读取 Flap 创建出来的 EmojiWarVault。买卖 EWTEST 产生的税收会进入这个金库。</span>
+        </div>
+
+        <div className="vaultStatsGrid">
+          <div className="vaultStat highlight"><span>Vault Balance</span><b>{formatBNB(vaultBalance)} BNB</b><p>当前金库余额</p></div>
+          <div className="vaultStat"><span>Total Received</span><b>{formatBNB(vaultTotalReceived)} BNB</b><p>累计收到税收</p></div>
+          <div className="vaultStat"><span>Total Withdrawn</span><b>{formatBNB(vaultTotalWithdrawn)} BNB</b><p>累计提现</p></div>
+          <div className="vaultStat"><span>Season Received</span><b>{formatBNB(vaultSeasonReceived)} BNB</b><p>当前赛季收入</p></div>
+          <div className="vaultStat"><span>Season Withdrawn</span><b>{formatBNB(vaultSeasonWithdrawn)} BNB</b><p>当前赛季提现</p></div>
         </div>
 
         <div className="vaultGrid">
+          <div className="vaultBox ready"><span>EmojiWarVault</span><b>{shortAddress(EMOJI_WAR_VAULT_ADDRESS)}</b><p>{EMOJI_WAR_VAULT_ADDRESS}</p></div>
+          <div className="vaultBox ready"><span>Vault Treasury</span><b>{shortAddress(vaultTreasury)}</b><p>{vaultTreasury}</p></div>
           <div className="vaultBox ready"><span>EWTEST Token</span><b>{shortAddress(TEST_TOKEN_ADDRESS)}</b><p>{TEST_TOKEN_ADDRESS}</p></div>
           <div className="vaultBox ready"><span>Burn Contract</span><b>{shortAddress(BURN_CONTRACT_ADDRESS)}</b><p>{BURN_CONTRACT_ADDRESS}</p></div>
-          <div className="vaultBox ready"><span>Army Contract</span><b>{shortAddress(ARMY_CONTRACT_ADDRESS)}</b><p>{ARMY_CONTRACT_ADDRESS}</p></div>
           <div className="vaultBox ready"><span>VaultFactory</span><b>{shortAddress(VAULT_FACTORY_ADDRESS)}</b><p>{VAULT_FACTORY_ADDRESS}</p></div>
-          <div className="vaultBox locked"><span>Treasury / Vault Info</span><b>{shortAddress(TREASURY_ADDRESS)}</b><p>{TREASURY_ADDRESS}</p></div>
         </div>
       </section>
 
@@ -592,6 +658,7 @@ export default function App() {
           <p>Mainnet test version. Not official $EMOJI.</p>
           <p>Token: {TEST_TOKEN_ADDRESS}</p>
           <p>Burn: {BURN_CONTRACT_ADDRESS}</p>
+          <p>Vault: {EMOJI_WAR_VAULT_ADDRESS}</p>
         </div>
         <div className="footerLinks">
           <a href={links.twitter}>X / Twitter</a>
