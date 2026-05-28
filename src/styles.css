@@ -121,9 +121,7 @@
 
 
 /* V7 added: original-style extensions */
-.topRankingCard{
-  grid-column:1/-1;
-}
+
 .topUserRow{
   grid-template-columns:46px 1fr auto;
 }
@@ -172,4 +170,1274 @@
 }
 @media(max-width:980px){
   .v7SplitNotice{grid-template-columns:1fr}
+}
+
+
+/* Launch-ready final polish */
+.launchFlow{
+  background:#0c0c12;
+  padding-top:72px;
+  padding-bottom:72px;
+}
+.flowGrid{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+}
+.flowItem{
+  min-height:130px;
+  border-radius:30px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  box-shadow:0 24px 80px rgba(0,0,0,.16);
+}
+.flowItem b{
+  color:#f0b90b;
+  font-size:22px;
+}
+.flowItem span{
+  color:#fff;
+  font-weight:900;
+  font-size:20px;
+}
+.claimReasonBox{
+  width:100%;
+  margin:16px 0 8px;
+  text-align:left;
+  border-radius:22px;
+  background:rgba(0,0,0,.24);
+  border:1px solid rgba(255,255,255,.1);
+  padding:16px 18px;
+}
+.claimReasonBox b{
+  display:block;
+  color:#f0b90b;
+  margin-bottom:8px;
+}
+.claimReasonBox p{
+  margin:6px 0;
+  color:rgba(255,255,255,.72);
+  font-size:13px;
+  line-height:1.55;
+}
+.primaryBtn:focus-visible,
+.secondaryBtn:focus-visible,
+.smallBtn:focus-visible,
+.chooseGrid button:focus-visible{
+  outline:2px solid #f0b90b;
+  outline-offset:3px;
+}
+.primaryBtn:hover,
+.secondaryBtn:hover,
+.smallBtn:hover{
+  transform:translateY(-2px);
+}
+.chooseGrid button.chosen{
+  box-shadow:0 0 0 1px rgba(240,185,11,.45), 0 20px 60px rgba(240,185,11,.08);
+}
+.statusTag{
+  margin-left:8px;
+}
+@media(max-width:980px){
+  .flowGrid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:620px){
+  .flowGrid{grid-template-columns:1fr}
+  .flowItem{min-height:auto;gap:18px}
+  .rewardClaimActions .primaryBtn,
+  .rewardClaimActions .secondaryBtn{
+    width:100%;
+    text-align:center;
+    justify-content:center;
+  }
+}
+
+
+/* Claim season selector optimization */
+.seasonPicker{
+  width:100%;
+  margin:14px 0 12px;
+  padding:16px;
+  border-radius:22px;
+  background:rgba(0,0,0,.24);
+  border:1px solid rgba(255,255,255,.1);
+  text-align:left;
+}
+.seasonPicker label{
+  display:block;
+  color:#f0b90b;
+  font-weight:900;
+  margin-bottom:10px;
+}
+.seasonPicker div{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.seasonPicker input{
+  min-width:160px;
+  flex:1;
+  padding:14px 16px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  outline:none;
+  font-weight:900;
+}
+.seasonPicker small{
+  display:block;
+  margin-top:10px;
+  color:rgba(255,255,255,.56);
+  line-height:1.55;
+}
+@media(max-width:620px){
+  .seasonPicker div .secondaryBtn,
+  .seasonPicker input{
+    width:100%;
+  }
+}
+
+
+/* Deep copy/layout polish */
+.heroProof{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:22px;
+}
+.heroProof span{
+  padding:10px 14px;
+  border-radius:999px;
+  background:rgba(240,185,11,.1);
+  border:1px solid rgba(240,185,11,.24);
+  color:#f0b90b;
+  font-weight:900;
+  font-size:13px;
+}
+.liveSnapshot{
+  padding:0 6vw 42px;
+  background:#07070b;
+}
+.snapshotGrid{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+.snapshotCard{
+  border-radius:28px;
+  background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.045));
+  border:1px solid rgba(255,255,255,.12);
+  padding:22px;
+  box-shadow:0 24px 80px rgba(0,0,0,.2);
+}
+.snapshotCard span{
+  display:block;
+  color:rgba(255,255,255,.48);
+  font-size:13px;
+  margin-bottom:8px;
+}
+.snapshotCard b{
+  color:#f0b90b;
+  font-size:24px;
+  word-break:break-word;
+}
+.snapshotCard p{
+  margin:8px 0 0;
+  color:rgba(255,255,255,.58);
+  font-size:13px;
+}
+.flywheel{
+  display:grid;
+  gap:6px;
+}
+.flywheel b{
+  color:#f0b90b;
+}
+.flywheel span{
+  color:#fff;
+  font-size:16px;
+}
+.flowItem small{
+  display:block;
+  margin-top:12px;
+  color:rgba(255,255,255,.55);
+  line-height:1.55;
+}
+.checkGrid{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
+.checkGrid div{
+  border-radius:28px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.1);
+  padding:22px;
+}
+.checkGrid b{
+  display:block;
+  color:#f0b90b;
+  font-size:24px;
+  margin-bottom:10px;
+}
+.checkGrid p{
+  margin:0;
+  color:rgba(255,255,255,.68);
+  line-height:1.7;
+}
+.rankingCard,
+.rewardClaimBox,
+.rewardStat,
+.vaultStat,
+.vaultBox,
+.walletStatus,
+.chooseArmyBox,
+.burnBox{
+  transition:transform .2s ease,border-color .2s ease,background .2s ease;
+}
+.rankingCard:hover,
+.rewardStat:hover,
+.vaultStat:hover,
+.vaultBox:hover,
+.burnBox:hover{
+  transform:translateY(-2px);
+  border-color:rgba(240,185,11,.28);
+}
+.rewardClaimBox{
+  position:relative;
+  overflow:hidden;
+}
+.rewardClaimBox::before{
+  content:"";
+  position:absolute;
+  left:18px;
+  right:18px;
+  top:0;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#f0b90b,transparent);
+  opacity:.8;
+}
+@media(max-width:1080px){
+  .snapshotGrid{grid-template-columns:repeat(2,1fr)}
+  .checkGrid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:620px){
+  .heroProof span{width:100%;text-align:center}
+  .snapshotGrid,.checkGrid{grid-template-columns:1fr}
+  .snapshotCard b{font-size:22px}
+}
+
+
+/* 全中文高级版视觉升级 */
+:root{
+  --gold:#f0b90b;
+  --gold-soft:rgba(240,185,11,.14);
+  --panel:rgba(255,255,255,.065);
+  --line:rgba(255,255,255,.12);
+  --muted:rgba(255,255,255,.62);
+  --deep:#07070b;
+}
+main{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.02),transparent 18%),
+    radial-gradient(circle at 12% 0%,rgba(240,185,11,.28),transparent 26%),
+    radial-gradient(circle at 78% 4%,rgba(124,58,237,.20),transparent 30%),
+    radial-gradient(circle at 50% 70%,rgba(240,185,11,.08),transparent 32%),
+    #07070b;
+}
+.hero{
+  position:relative;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:54px 54px;
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.75),transparent 72%);
+  pointer-events:none;
+}
+.nav{
+  position:relative;
+  z-index:3;
+  padding:10px 14px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:26px;
+  background:rgba(7,7,11,.42);
+  backdrop-filter:blur(18px);
+}
+.brand b{
+  letter-spacing:.02em;
+}
+.navLinks a{
+  position:relative;
+}
+.navLinks a::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-8px;
+  height:2px;
+  background:var(--gold);
+  transform:scaleX(0);
+  transition:.2s ease;
+}
+.navLinks a:hover::after{
+  transform:scaleX(1);
+}
+.heroText,
+.warCard{
+  position:relative;
+  z-index:2;
+}
+.heroText h1{
+  text-shadow:0 0 70px rgba(240,185,11,.18);
+}
+.heroText h2{
+  background:linear-gradient(90deg,#f0b90b,#fff3c4,#ffffff);
+  -webkit-background-clip:text;
+  background-clip:text;
+}
+.lead{
+  color:rgba(255,255,255,.76);
+}
+.heroProof span,
+.pill{
+  backdrop-filter:blur(12px);
+}
+.warCard,
+.walletStatus,
+.chooseArmyBox,
+.burnBox,
+.rankingCard,
+.rewardClaimBox,
+.rewardStat,
+.vaultBox,
+.vaultStat,
+.card,
+.snapshotCard,
+.flowItem,
+.checkGrid div{
+  backdrop-filter:blur(18px);
+}
+.warCard{
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.11),rgba(255,255,255,.045)),
+    radial-gradient(circle at 50% 0%,rgba(240,185,11,.14),transparent 45%);
+}
+.miniArmy,
+.rewardStat,
+.vaultStat,
+.snapshotCard{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 24px 80px rgba(0,0,0,.2);
+}
+.sectionHead{
+  position:relative;
+}
+.sectionHead p{
+  letter-spacing:.12em;
+}
+.sectionHead h2{
+  text-wrap:balance;
+}
+.sectionHead span{
+  color:rgba(255,255,255,.66);
+}
+.primaryBtn,
+.secondaryBtn,
+.smallBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.primaryBtn{
+  background:linear-gradient(135deg,#f0b90b,#ffd76a);
+  box-shadow:0 22px 70px rgba(240,185,11,.22);
+}
+.secondaryBtn{
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(12px);
+}
+.rewardClaimBox > b,
+.snapshotCard b,
+.vaultStat b,
+.rewardStat b{
+  text-shadow:0 0 28px rgba(240,185,11,.18);
+}
+.flowItem{
+  position:relative;
+  overflow:hidden;
+}
+.flowItem::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg,rgba(240,185,11,.12),transparent 42%);
+  opacity:.75;
+  pointer-events:none;
+}
+.flowItem b,
+.flowItem span,
+.flowItem small{
+  position:relative;
+}
+.claimReasonBox,
+.seasonPicker{
+  background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(255,255,255,.035));
+}
+.armyRow{
+  transition:.18s ease;
+}
+.armyRow:hover{
+  background:rgba(240,185,11,.055);
+  border-radius:18px;
+  padding-left:12px;
+  padding-right:12px;
+}
+.footerLinks a:hover{
+  border-color:rgba(240,185,11,.45);
+  color:var(--gold);
+}
+@media(max-width:620px){
+  .nav{
+    border-radius:20px;
+    padding:8px 10px;
+  }
+  .heroText h1{
+    font-size:56px;
+  }
+  .heroText h2{
+    font-size:38px;
+  }
+  .lead{
+    font-size:16px;
+  }
+}
+
+
+/* 最终调整：自动赛季领取 + 军团顺序优化 */
+.autoSeasonNotice{
+  width:100%;
+  margin:14px 0 12px;
+  padding:18px;
+  border-radius:22px;
+  background:linear-gradient(180deg,rgba(240,185,11,.10),rgba(255,255,255,.04));
+  border:1px solid rgba(240,185,11,.24);
+  text-align:left;
+}
+.autoSeasonNotice b{
+  display:block;
+  color:#f0b90b;
+  margin-bottom:8px;
+}
+.autoSeasonNotice p{
+  margin:0 0 8px;
+  color:rgba(255,255,255,.76);
+}
+.autoSeasonNotice small{
+  display:block;
+  color:rgba(255,255,255,.56);
+  line-height:1.55;
+}
+.seasonPicker{
+  display:none!important;
+}
+
+
+/* 最终 UI 调整：代币名统一、首页标题间距、隐藏手动切链按钮 */
+.heroText h1{
+  letter-spacing:-2px!important;
+  line-height:1.02!important;
+  margin-bottom:14px!important;
+}
+.heroText h2{
+  letter-spacing:-1px!important;
+  line-height:1.16!important;
+  margin-top:10px!important;
+}
+.heroText .lead{
+  margin-top:28px!important;
+}
+.brand span{
+  color:#f0b90b!important;
+  font-weight:800;
+}
+.walletActions{
+  align-items:center;
+}
+@media(max-width:620px){
+  .heroText h1{
+    font-size:50px!important;
+    line-height:1.06!important;
+    letter-spacing:-1px!important;
+    margin-bottom:12px!important;
+  }
+  .heroText h2{
+    font-size:34px!important;
+    line-height:1.2!important;
+    letter-spacing:-.5px!important;
+  }
+}
+
+
+/* 最终调整：突出 Emoji 名字 + 首页按钮改为确定选择阵容 */
+.tokenHeroName{
+  font-size:clamp(76px,12vw,148px)!important;
+  letter-spacing:-3px!important;
+  line-height:1!important;
+  margin-bottom:22px!important;
+  background:linear-gradient(90deg,#f0b90b,#fff2b8,#ffffff,#f0b90b);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  text-shadow:none!important;
+  filter:drop-shadow(0 0 46px rgba(240,185,11,.18));
+}
+.heroText h2{
+  margin-top:0!important;
+}
+.brand b{
+  font-size:20px;
+  color:#fff;
+}
+.brand span{
+  letter-spacing:.04em;
+}
+.hero .actions .secondaryBtn{
+  min-width:150px;
+  justify-content:center;
+}
+@media(max-width:620px){
+  .tokenHeroName{
+    font-size:68px!important;
+    letter-spacing:-1px!important;
+    margin-bottom:16px!important;
+  }
+  .heroText h2{
+    font-size:30px!important;
+  }
+}
+
+
+/* 修复首页 Emoji 标题被覆盖 / 重叠 */
+.heroGrid{
+  align-items:center!important;
+  gap:56px!important;
+}
+.heroText{
+  position:relative!important;
+  z-index:5!important;
+  overflow:visible!important;
+  min-width:0!important;
+}
+.heroTitleBlock{
+  position:relative;
+  z-index:6;
+  display:block;
+  margin:22px 0 30px!important;
+  padding:4px 0 10px;
+}
+.tokenHeroName{
+  display:block!important;
+  position:relative!important;
+  z-index:7!important;
+  font-size:clamp(72px,10vw,118px)!important;
+  line-height:1.08!important;
+  letter-spacing:-1.5px!important;
+  margin:0 0 20px!important;
+  padding:0 0 8px!important;
+  background:linear-gradient(90deg,#f0b90b 0%,#fff2b8 45%,#ffffff 70%,#f0b90b 100%)!important;
+  -webkit-background-clip:text!important;
+  background-clip:text!important;
+  color:transparent!important;
+  text-shadow:none!important;
+  filter:drop-shadow(0 0 34px rgba(240,185,11,.18));
+  overflow:visible!important;
+}
+.heroTitleBlock h2{
+  display:block!important;
+  position:relative!important;
+  z-index:6!important;
+  margin:0!important;
+  padding-top:4px!important;
+  line-height:1.22!important;
+  letter-spacing:-.5px!important;
+  max-width:760px;
+}
+.heroProof{
+  margin-top:18px!important;
+}
+@media(max-width:980px){
+  .heroGrid{
+    gap:34px!important;
+  }
+}
+@media(max-width:620px){
+  .heroTitleBlock{
+    margin:18px 0 24px!important;
+  }
+  .tokenHeroName{
+    font-size:64px!important;
+    line-height:1.12!important;
+    letter-spacing:0!important;
+    margin-bottom:16px!important;
+    padding-bottom:6px!important;
+  }
+  .heroTitleBlock h2{
+    font-size:28px!important;
+    line-height:1.25!important;
+  }
+}
+
+
+/* 军团选择改为：先选卡片，再确认上链 */
+.armyConfirmPanel{
+  margin-top:18px;
+  padding:18px;
+  border-radius:24px;
+  background:linear-gradient(180deg,rgba(240,185,11,.10),rgba(255,255,255,.04));
+  border:1px solid rgba(240,185,11,.25);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+.armyConfirmPanel span{
+  display:block;
+  color:rgba(255,255,255,.52);
+  font-size:13px;
+  margin-bottom:6px;
+}
+.armyConfirmPanel b{
+  color:#f0b90b;
+  font-size:22px;
+}
+.chooseGrid button.onChainChosen{
+  box-shadow:0 0 0 1px rgba(240,185,11,.55),0 18px 55px rgba(240,185,11,.12);
+}
+.chooseGrid button.onChainChosen small{
+  color:#f0b90b;
+  font-weight:900;
+}
+@media(max-width:620px){
+  .armyConfirmPanel{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .armyConfirmPanel .primaryBtn{
+    width:100%;
+  }
+}
+
+
+/* 简单易懂版优化 */
+.heroProof span{
+  font-size:14px!important;
+  padding:11px 16px!important;
+}
+.flowGrid{
+  grid-template-columns:repeat(4,1fr)!important;
+}
+.flowItem{
+  min-height:150px;
+}
+.flowItem span{
+  font-size:22px!important;
+}
+.flowItem small{
+  font-size:14px;
+}
+.snapshotCard span,
+.rewardStat span,
+.vaultStat span{
+  color:rgba(255,255,255,.58)!important;
+}
+.snapshotCard b,
+.rewardStat b,
+.vaultStat b{
+  font-size:24px!important;
+}
+.sectionHead span{
+  max-width:820px!important;
+}
+.chooseHint,
+.burnBox p,
+.rewardClaimBox p,
+.vaultStat p,
+.rewardStat p{
+  font-size:14px;
+}
+.statusMessage{
+  font-size:14px;
+}
+@media(max-width:980px){
+  .flowGrid{
+    grid-template-columns:repeat(2,1fr)!important;
+  }
+}
+@media(max-width:620px){
+  .flowGrid{
+    grid-template-columns:1fr!important;
+  }
+  .flowItem{
+    min-height:auto;
+  }
+}
+
+
+/* 简化后的领取分红板块 */
+.claimSimpleGuide{
+  max-width:1200px;
+  margin:0 auto 20px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+}
+.claimSimpleGuide div{
+  border-radius:26px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  padding:20px;
+  box-shadow:0 20px 70px rgba(0,0,0,.18);
+}
+.claimSimpleGuide b{
+  display:inline-grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  border-radius:13px;
+  background:rgba(240,185,11,.14);
+  color:#f0b90b;
+  margin-bottom:12px;
+}
+.claimSimpleGuide p{
+  margin:0;
+  color:rgba(255,255,255,.72);
+  line-height:1.65;
+}
+.simplifiedRewardPanel{
+  grid-template-columns:.9fr 1.1fr;
+}
+.simplifiedClaimBox > b{
+  font-size:50px;
+}
+.simpleRewardBreakdown{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin:18px 0;
+}
+.simpleRewardBreakdown div{
+  border-radius:20px;
+  background:rgba(0,0,0,.24);
+  border:1px solid rgba(255,255,255,.10);
+  padding:16px;
+}
+.simpleRewardBreakdown span{
+  display:block;
+  color:rgba(255,255,255,.55);
+  font-size:13px;
+  margin-bottom:8px;
+}
+.simpleRewardBreakdown strong{
+  color:#f0b90b;
+  font-size:22px;
+}
+.simpleClaimStatus{
+  margin-top:14px;
+}
+.simpleRewardStats{
+  align-content:start;
+}
+@media(max-width:980px){
+  .claimSimpleGuide,
+  .simplifiedRewardPanel{
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:620px){
+  .simpleRewardBreakdown{
+    grid-template-columns:1fr;
+  }
+  .simplifiedClaimBox > b{
+    font-size:34px;
+  }
+}
+
+
+/* 排行榜最终布局：军团排名 + 个人燃烧榜双列 */
+.rankingGrid{
+  align-items:start;
+}
+.rankingCard .statusMessage{
+  margin-top:12px;
+}
+
+
+/* 黑金炫光高级背景 + 领取区紧凑优化 */
+:root{
+  --ew-gold:#f0b90b;
+  --ew-gold-2:#ffd66b;
+  --ew-bg:#050507;
+  --ew-card:rgba(255,255,255,.065);
+  --ew-border:rgba(240,185,11,.22);
+}
+
+body{
+  background:#050507;
+}
+
+main{
+  position:relative;
+  background:
+    radial-gradient(circle at 18% -6%,rgba(240,185,11,.34),transparent 24%),
+    radial-gradient(circle at 85% 4%,rgba(255,214,107,.18),transparent 22%),
+    radial-gradient(circle at 52% 38%,rgba(240,185,11,.10),transparent 30%),
+    radial-gradient(circle at 80% 78%,rgba(124,58,237,.12),transparent 24%),
+    linear-gradient(180deg,#050507 0%,#08080d 42%,#050507 100%)!important;
+}
+
+main::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  background:
+    linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(circle at 50% 8%,rgba(0,0,0,.86),transparent 68%);
+}
+
+main::after{
+  content:"";
+  position:fixed;
+  inset:-20%;
+  pointer-events:none;
+  z-index:0;
+  background:
+    conic-gradient(from 210deg at 50% 40%,transparent 0deg,rgba(240,185,11,.12) 38deg,transparent 78deg,transparent 220deg,rgba(255,214,107,.08) 252deg,transparent 310deg);
+  filter:blur(48px);
+  opacity:.82;
+  animation:ewGlowSpin 18s linear infinite;
+}
+
+@keyframes ewGlowSpin{
+  from{transform:rotate(0deg) scale(1.02)}
+  to{transform:rotate(360deg) scale(1.02)}
+}
+
+.nav,.heroGrid,.liveSnapshot,.launchFlow,.section,footer{
+  position:relative;
+  z-index:1;
+}
+
+.hero{
+  position:relative;
+}
+
+.hero::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:90px;
+  width:min(980px,92vw);
+  height:360px;
+  transform:translateX(-50%);
+  pointer-events:none;
+  z-index:0;
+  background:
+    radial-gradient(ellipse at center,rgba(240,185,11,.18),transparent 64%),
+    linear-gradient(90deg,transparent,rgba(240,185,11,.14),transparent);
+  filter:blur(18px);
+}
+
+.nav{
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.045))!important;
+  border:1px solid rgba(240,185,11,.20)!important;
+  box-shadow:0 20px 80px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.warCard,
+.walletStatus,
+.chooseArmyBox,
+.burnBox,
+.rankingCard,
+.rewardClaimBox,
+.rewardStat,
+.vaultBox,
+.vaultStat,
+.card,
+.snapshotCard,
+.flowItem,
+.claimSimpleGuide div{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.038))!important;
+  border:1px solid rgba(240,185,11,.16)!important;
+  box-shadow:
+    0 26px 90px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.075)!important;
+}
+
+.warCard::before,
+.rewardClaimBox::after,
+.burnBox::after,
+.rankingCard::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+}
+
+.warCard{
+  overflow:hidden;
+}
+
+.warCard::after{
+  inset:0;
+  background:linear-gradient(120deg,transparent 0%,rgba(240,185,11,.12) 42%,transparent 72%);
+  transform:translateX(-70%);
+  animation:ewCardShine 6s ease-in-out infinite;
+}
+
+@keyframes ewCardShine{
+  0%,60%,100%{transform:translateX(-85%)}
+  78%{transform:translateX(85%)}
+}
+
+.primaryBtn{
+  background:linear-gradient(135deg,#f0b90b 0%,#ffd66b 48%,#f0b90b 100%)!important;
+  box-shadow:0 18px 60px rgba(240,185,11,.26), inset 0 1px 0 rgba(255,255,255,.36)!important;
+}
+
+.secondaryBtn{
+  background:rgba(255,255,255,.075)!important;
+  border:1px solid rgba(240,185,11,.16)!important;
+}
+
+.secondaryBtn:hover,
+.primaryBtn:hover{
+  border-color:rgba(240,185,11,.42)!important;
+  box-shadow:0 18px 58px rgba(240,185,11,.16)!important;
+}
+
+/* 领取区：减少空位，改成更紧凑的一屏信息 */
+.rewardSection{
+  background:
+    radial-gradient(circle at 18% 8%,rgba(240,185,11,.13),transparent 32%),
+    radial-gradient(circle at 88% 42%,rgba(240,185,11,.08),transparent 24%),
+    #07070b!important;
+}
+
+.claimSimpleGuide{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:12px!important;
+  margin-bottom:14px!important;
+}
+
+.claimSimpleGuide div{
+  padding:16px 18px!important;
+  border-radius:22px!important;
+  min-height:auto!important;
+}
+
+.claimSimpleGuide b{
+  width:30px!important;
+  height:30px!important;
+  border-radius:11px!important;
+  margin-bottom:8px!important;
+}
+
+.claimSimpleGuide p{
+  font-size:13px!important;
+  line-height:1.52!important;
+}
+
+.simplifiedRewardPanel{
+  grid-template-columns:1fr!important;
+  gap:14px!important;
+}
+
+.simplifiedClaimBox{
+  text-align:left!important;
+  display:grid!important;
+  grid-template-columns:minmax(260px,.88fr) minmax(280px,1.12fr) minmax(250px,.9fr)!important;
+  grid-template-areas:
+    "head breakdown actions"
+    "season status actions"
+    "hint hint hint"!important;
+  align-items:stretch!important;
+  gap:14px!important;
+  padding:24px!important;
+}
+
+.simplifiedClaimBox .rewardIcon{
+  display:none!important;
+}
+
+.simplifiedClaimBox h3{
+  grid-area:head;
+  margin:0!important;
+  font-size:24px!important;
+  align-self:end;
+}
+
+.simplifiedClaimBox > b{
+  grid-area:head;
+  align-self:center;
+  display:block!important;
+  margin:42px 0 0!important;
+  font-size:42px!important;
+  line-height:1.08!important;
+}
+
+.simpleRewardBreakdown{
+  grid-area:breakdown;
+  margin:0!important;
+  height:100%;
+}
+
+.autoSeasonNotice{
+  grid-area:season;
+  margin:0!important;
+  height:100%;
+}
+
+.simpleClaimStatus,
+.claimReasonBox{
+  grid-area:status;
+  margin:0!important;
+  height:100%;
+}
+
+.rewardClaimActions{
+  grid-area:actions;
+  margin:0!important;
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  align-content:center!important;
+  gap:10px!important;
+}
+
+.rewardClaimActions .primaryBtn,
+.rewardClaimActions .secondaryBtn{
+  width:100%!important;
+  padding:14px 18px!important;
+}
+
+.simplifiedClaimBox .chooseHint{
+  grid-area:hint;
+  margin:0!important;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(0,0,0,.20);
+  border:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.62);
+}
+
+.simpleRewardStats{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;
+}
+
+.simpleRewardStats .rewardStat{
+  padding:18px!important;
+  border-radius:22px!important;
+}
+
+.simpleRewardStats .rewardStat b{
+  font-size:20px!important;
+}
+
+.simpleRewardStats .rewardStat p{
+  font-size:12px!important;
+  line-height:1.45!important;
+}
+
+@media(max-width:1180px){
+  .simplifiedClaimBox{
+    grid-template-columns:1fr 1fr!important;
+    grid-template-areas:
+      "head breakdown"
+      "season status"
+      "actions actions"
+      "hint hint"!important;
+  }
+  .rewardClaimActions{
+    grid-template-columns:repeat(4,1fr)!important;
+  }
+}
+
+@media(max-width:980px){
+  .claimSimpleGuide,
+  .simpleRewardStats{
+    grid-template-columns:1fr 1fr!important;
+  }
+  .simplifiedClaimBox{
+    grid-template-columns:1fr!important;
+    grid-template-areas:
+      "head"
+      "breakdown"
+      "season"
+      "status"
+      "actions"
+      "hint"!important;
+  }
+  .rewardClaimActions{
+    grid-template-columns:1fr!important;
+  }
+}
+
+@media(max-width:620px){
+  main::after{
+    opacity:.45;
+  }
+  .claimSimpleGuide,
+  .simpleRewardStats{
+    grid-template-columns:1fr!important;
+  }
+  .simplifiedClaimBox{
+    padding:18px!important;
+  }
+  .simplifiedClaimBox > b{
+    font-size:34px!important;
+    margin-top:38px!important;
+  }
+}
+
+
+/* 修复：首页标题不被挡、Claim金额不重叠、榜单左右协调 */
+.hero{
+  overflow:visible!important;
+}
+.heroGrid{
+  align-items:center!important;
+}
+.heroText{
+  overflow:visible!important;
+  padding-top:10px!important;
+}
+.heroTitleBlock{
+  margin:28px 0 34px!important;
+  overflow:visible!important;
+}
+.tokenHeroName{
+  font-size:clamp(64px,9vw,104px)!important;
+  line-height:1.14!important;
+  letter-spacing:-1px!important;
+  margin:0 0 18px!important;
+  padding:0 0 10px!important;
+  overflow:visible!important;
+}
+.heroTitleBlock h2{
+  line-height:1.24!important;
+  margin-top:4px!important;
+}
+@media(max-width:620px){
+  .tokenHeroName{
+    font-size:58px!important;
+    line-height:1.18!important;
+    padding-bottom:8px!important;
+  }
+}
+
+/* Claim BNB 分红：总额独立区域，避免“总共可领”和 0 BNB 重叠 */
+.simplifiedClaimBox{
+  grid-template-columns:minmax(220px,.75fr) minmax(280px,1.05fr) minmax(240px,.85fr)!important;
+  grid-template-areas:
+    "total breakdown actions"
+    "season status actions"
+    "hint hint hint"!important;
+  align-items:stretch!important;
+}
+.simplifiedClaimBox h3{
+  display:none!important;
+}
+.claimTotalBox{
+  grid-area:total;
+  min-height:168px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:20px;
+  border-radius:24px;
+  background:linear-gradient(180deg,rgba(240,185,11,.13),rgba(0,0,0,.22));
+  border:1px solid rgba(240,185,11,.25);
+}
+.claimTotalBox span{
+  display:block;
+  color:rgba(255,255,255,.62);
+  font-size:15px;
+  margin-bottom:12px;
+}
+.claimTotalBox b{
+  display:block!important;
+  margin:0!important;
+  color:#f0b90b;
+  font-size:clamp(34px,4vw,54px)!important;
+  line-height:1.05!important;
+  word-break:break-word;
+}
+.simplifiedClaimBox > b{
+  display:none!important;
+}
+
+/* 榜单协调：军团排名和个人燃烧榜统一高度、统一行结构 */
+.rankingGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  align-items:stretch!important;
+}
+.rankingCard{
+  height:100%;
+}
+.rankingCard .armyRow{
+  min-height:74px;
+  grid-template-columns:46px minmax(0,1fr) minmax(120px,auto)!important;
+}
+.rankingCard .armyName{
+  min-width:0;
+}
+.rankingCard .armyName div{
+  min-width:0;
+}
+.rankingCard .armyName p{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.rankingCard .armyBurn b{
+  white-space:nowrap;
+}
+.rankingHead span{
+  color:#f0b90b!important;
+}
+@media(max-width:980px){
+  .simplifiedClaimBox{
+    grid-template-columns:1fr!important;
+    grid-template-areas:
+      "total"
+      "breakdown"
+      "season"
+      "status"
+      "actions"
+      "hint"!important;
+  }
+  .rankingGrid{
+    grid-template-columns:1fr!important;
+  }
 }

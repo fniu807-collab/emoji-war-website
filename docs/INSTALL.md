@@ -1,34 +1,21 @@
 # 安装说明
 
-## 1. 备份原项目
+## 覆盖方式
 
-复制：
-
-```text
-C:\Users\Administrator\Desktop\emoji-war-website
-```
-
-改名：
-
-```text
-emoji-war-website-backup
-```
-
-## 2. 覆盖文件
-
-解压本包后，把里面所有文件复制到：
+1. 解压 `emoji-war-v7-launch-optimized.zip`
+2. 进入解压后的文件夹
+3. Ctrl + A 全选里面的所有内容
+4. Ctrl + C 复制
+5. 打开：
 
 ```text
 C:\Users\Administrator\Desktop\emoji-war-website
 ```
 
-选择：
+6. Ctrl + V 粘贴
+7. 选择“替换目标中的文件”
 
-```text
-替换目标中的文件
-```
-
-## 3. 运行
+## 运行
 
 ```bash
 cd C:\Users\Administrator\Desktop\emoji-war-website
@@ -42,7 +29,7 @@ npm run dev
 http://localhost:5173/
 ```
 
-## 4. 测试
+## 测试顺序
 
 1. Connect Wallet
 2. Switch to BNB Mainnet
@@ -53,3 +40,5 @@ http://localhost:5173/
 7. Claim Realtime
 8. Claim Season Bonus
 9. Claim All
+
+确认本地正常后再 Push 到 GitHub。
