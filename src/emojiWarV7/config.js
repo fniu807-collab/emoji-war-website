@@ -41,5 +41,10 @@ export const EMOJI_WAR_V7_CONFIG = {
     { id: 3, emoji: "💎", zh: "钻石军团", en: "Diamond Army", desc: "坚守、信仰、钻石手" },
     { id: 4, emoji: "🦋", zh: "蝴蝶军团", en: "Butterfly Army", desc: "传播、变异、破圈" },
     { id: 5, emoji: "🔶", zh: "币安军团", en: "Binance Army", desc: "社区自发情绪阵营，非 Binance 官方关联" },
-  ],
+  ],,
+  uiText: {
+    minHoldNotice: "领取分红需要持有至少 500,000 EWTEST / EMOJI",
+    burnShareNotice: "Burn Share 有效期 7 天，只参与 Burn 之后进入池子的实时分红。",
+    binanceArmyDisclaimer: "币安军团为社区自发情绪阵营，非 Binance 官方项目，非 Binance 官方关联。",
+  },
 };

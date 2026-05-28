@@ -56,31 +56,35 @@ export function getContracts(providerOrSigner) {
 }
 
 export function parseTokenAmount(amountText) {
-  return ethers.parseUnits(String(amountText || "0"), EMOJI_WAR_V7_CONFIG.token.decimals);
+  const clean = String(amountText || "0").replace(/,/g, "").trim();
+  return ethers.parseUnits(clean || "0", EMOJI_WAR_V7_CONFIG.token.decimals);
+}
+
+function formatUnitsSafe(value, decimals, digits = 2) {
+  try {
+    const raw = ethers.formatUnits(value || 0n, decimals);
+    const [whole, frac = ""] = raw.split(".");
+    const shortFrac = frac.slice(0, digits).replace(/0+$/, "");
+    const wholeFormatted = Number(whole).toLocaleString();
+    return shortFrac ? `${wholeFormatted}.${shortFrac}` : wholeFormatted;
+  } catch {
+    return "0";
+  }
 }
 
 export function formatToken(value, digits = 2) {
-  try {
-    return Number(ethers.formatUnits(value || 0n, EMOJI_WAR_V7_CONFIG.token.decimals)).toLocaleString(undefined, {
-      maximumFractionDigits: digits,
-    });
-  } catch {
-    return "0";
-  }
+  return formatUnitsSafe(value, EMOJI_WAR_V7_CONFIG.token.decimals, digits);
 }
 
 export function formatBNB(value, digits = 6) {
-  try {
-    return Number(ethers.formatEther(value || 0n)).toLocaleString(undefined, {
-      maximumFractionDigits: digits,
-    });
-  } catch {
-    return "0";
-  }
+  return formatUnitsSafe(value, 18, digits);
 }
 
+// 兼容旧测试面板 EmojiWarV7Panel.jsx 里的 fmtWei 调用
+export const fmtWei = formatBNB;
+
 export function shortAddress(address) {
-  if (!address) return "-";
+  if (!address || address === "0x0000000000000000000000000000000000000000") return "-";
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
@@ -97,11 +101,27 @@ export function formatCountdown(sec) {
   return `${h}h ${m}m ${r}s`;
 }
 
+async function safeCall(fn, fallback) {
+  try {
+    const result = await fn();
+    return result ?? fallback;
+  } catch (err) {
+    console.warn("EmojiWar V7 read failed:", err?.shortMessage || err?.message || err);
+    return fallback;
+  }
+}
+
 export async function readV7Dashboard(userAddress) {
+  if (!userAddress) throw new Error("Wallet address is required");
+
   const provider = getInjectedProvider();
   const c = getContracts(provider);
-  const currentSeasonBN = await c.army.currentSeason();
-  const seasonId = Number(currentSeasonBN);
+
+  const currentSeasonBN = await safeCall(() => c.army.currentSeason(), 1n);
+  const seasonId = Number(currentSeasonBN || 1n);
+
+  const zero = 0n;
+  const zeroAddress = "0x0000000000000000000000000000000000000000";
 
   const [
     tokenBalance,
@@ -120,43 +140,43 @@ export async function readV7Dashboard(userAddress) {
     activeDepositSeason,
     seasonInfo,
   ] = await Promise.all([
-    c.token.balanceOf(userAddress),
-    c.rewardPool.hasMinHold(userAddress),
-    c.army.getUserArmy(seasonId, userAddress),
-    c.army.secondsUntilCurrentSeasonEnds(),
-    c.burn.userBurned(seasonId, userAddress),
-    c.burn.seasonTotalBurned(seasonId),
-    c.burn.getWinningArmy(seasonId),
-    c.rewardPool.getRealtimeClaimable(userAddress),
-    c.rewardPool.getSeasonBonusClaimable(seasonId, userAddress),
-    c.vault.getVaultBalance(),
-    c.vault.totalReceived(),
-    c.vault.totalWithdrawn(),
-    c.rewardPool.getPoolBalance(),
-    c.rewardPool.activeDepositSeason(),
-    c.rewardPool.getSeasonInfo(seasonId),
+    safeCall(() => c.token.balanceOf(userAddress), zero),
+    safeCall(() => c.rewardPool.hasMinHold(userAddress), false),
+    safeCall(() => c.army.getUserArmy(seasonId, userAddress), 0n),
+    safeCall(() => c.army.secondsUntilCurrentSeasonEnds(), zero),
+    safeCall(() => c.burn.userBurned(seasonId, userAddress), zero),
+    safeCall(() => c.burn.seasonTotalBurned(seasonId), zero),
+    safeCall(() => c.burn.getWinningArmy(seasonId), [0n, zero]),
+    safeCall(() => c.rewardPool.getRealtimeClaimable(userAddress), zero),
+    safeCall(() => c.rewardPool.getSeasonBonusClaimable(seasonId, userAddress), zero),
+    safeCall(() => c.vault.getVaultBalance(), zero),
+    safeCall(() => c.vault.totalReceived(), zero),
+    safeCall(() => c.vault.totalWithdrawn(), zero),
+    safeCall(() => c.rewardPool.getPoolBalance(), zero),
+    safeCall(() => c.rewardPool.activeDepositSeason(), 1n),
+    safeCall(() => c.rewardPool.getSeasonInfo(seasonId), [false, false, zero, zero, zero, zero, zero, 0n, zeroAddress, zeroAddress, zeroAddress]),
   ]);
 
   const top10 = [];
   for (let rank = 1; rank <= 10; rank++) {
     const [user, amount] = await Promise.all([
-      c.burn.getTopUser(seasonId, rank),
-      c.burn.getTopAmount(seasonId, rank),
+      safeCall(() => c.burn.getTopUser(seasonId, rank), zeroAddress),
+      safeCall(() => c.burn.getTopAmount(seasonId, rank), zero),
     ]);
     top10.push({ rank, user, amount });
   }
 
   return {
     currentSeason: seasonId,
-    activeDepositSeason: Number(activeDepositSeason),
+    activeDepositSeason: Number(activeDepositSeason || 1n),
     tokenBalance,
-    hasMinHold,
-    myArmy: Number(myArmy),
-    secondsLeft: Number(secondsLeft),
+    hasMinHold: Boolean(hasMinHold),
+    myArmy: Number(myArmy || 0n),
+    secondsLeft: Number(secondsLeft || 0n),
     myBurn,
     seasonTotalBurned,
-    winningArmy: Number(winning[0]),
-    winningAmount: winning[1],
+    winningArmy: Number(winning?.[0] || 0n),
+    winningAmount: winning?.[1] || zero,
     realtimeClaimable,
     seasonBonusClaimable,
     vaultBalance,
@@ -164,17 +184,17 @@ export async function readV7Dashboard(userAddress) {
     vaultTotalWithdrawn,
     rewardPoolBalance,
     seasonInfo: {
-      finalized: seasonInfo[0],
-      ended: seasonInfo[1],
-      deposited: seasonInfo[2],
-      bonusDeposited: seasonInfo[3],
-      bonusClaimed: seasonInfo[4],
-      totalBurned: seasonInfo[5],
-      eligibleBurned: seasonInfo[6],
-      winningArmy: Number(seasonInfo[7]),
-      top1: seasonInfo[8],
-      top2: seasonInfo[9],
-      top3: seasonInfo[10],
+      finalized: Boolean(seasonInfo?.[0]),
+      ended: Boolean(seasonInfo?.[1]),
+      deposited: seasonInfo?.[2] || zero,
+      bonusDeposited: seasonInfo?.[3] || zero,
+      bonusClaimed: seasonInfo?.[4] || zero,
+      totalBurned: seasonInfo?.[5] || zero,
+      eligibleBurned: seasonInfo?.[6] || zero,
+      winningArmy: Number(seasonInfo?.[7] || 0n),
+      top1: seasonInfo?.[8] || zeroAddress,
+      top2: seasonInfo?.[9] || zeroAddress,
+      top3: seasonInfo?.[10] || zeroAddress,
     },
     top10,
   };
