@@ -3,10 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 const BNB_CHAIN_ID = "0x38";
 
 const links = {
-  flap: "#",       // 发币后把 # 替换成 Flap 买币链接
-  twitter: "#",    // 把 # 替换成 X / Twitter 链接
+  flap: "https://gmgn.ai/bsc/token/0x89e9a16b734e553114dae662abd5cae7aa087777",       // 发币后把 # 替换成 Flap 买币链接
+  twitter: "https://x.com/RoadBuildersBNB",    // 把 # 替换成 X / Twitter 链接
   telegram: "#",   // 把 # 替换成 Telegram 链接
-  contract: "Coming soon" // 发币后替换成合约地址
+  contract: "0x89e9a16b734e553114dae662abd5cae7aa087777" // 发币后替换成合约地址
 };
 
 const season = {
