@@ -187,9 +187,12 @@ function localArmyKey(wallet) {
   return `emoji-war-mainnet-army-${wallet?.toLowerCase()}`;
 }
 
-async function safeRead(fn, fallback) {
+async function safeRead(fn, fallback, timeoutMs = 5000) {
   try {
-    return await fn();
+    return await Promise.race([
+      fn(),
+      new Promise((resolve) => setTimeout(() => resolve(fallback), timeoutMs))
+    ]);
   } catch {
     return fallback;
   }
@@ -321,8 +324,7 @@ export default function App() {
         setChainId(id);
         if (accounts?.[0]) {
           setWallet(accounts[0]);
-          if (id === BNB_MAINNET_CHAIN_ID) await loadAllData(accounts[0]);
-          else loadLocalArmyFallback(accounts[0]);
+          loadLocalArmyFallback(accounts[0]);
         }
       } catch {}
     };
@@ -339,7 +341,10 @@ export default function App() {
     const handleChainChanged = async (id) => {
       const normalized = chainIdToHex(id);
       setChainId(normalized);
-      if (wallet && normalized === BNB_MAINNET_CHAIN_ID) await loadAllData(wallet);
+      if (wallet && normalized === BNB_MAINNET_CHAIN_ID) {
+        setStatus("网络已切换到 BNB Smart Chain。需要查看最新数据时，请点击“刷新链上数据”。");
+        loadLocalArmyFallback(wallet);
+      }
     };
 
     injected.on?.("accountsChanged", handleAccountsChanged);
@@ -349,7 +354,7 @@ export default function App() {
       injected.removeListener?.("accountsChanged", handleAccountsChanged);
       injected.removeListener?.("chainChanged", handleChainChanged);
     };
-  }, [wallet]);
+  }, []);
 
   useEffect(() => {
     if (!wallet || !isMainnet) return;
@@ -414,8 +419,8 @@ export default function App() {
         await switchToBnbMainnet();
         loadLocalArmyFallback(account);
       } else if (account) {
-        await loadAllData(account);
-        setStatus("钱包连接成功，V7 主网数据已刷新。");
+        loadLocalArmyFallback(account);
+        setStatus("钱包连接成功。为保证页面不卡顿，链上数据不会自动全量读取；需要查看最新余额、排行和分红时，请点击“刷新链上数据”。");
       }
     } catch (error) {
       setStatus(error?.message || "钱包连接失败。");
@@ -435,8 +440,7 @@ export default function App() {
         params: [{ chainId: BNB_MAINNET_CHAIN_ID }]
       });
       setChainId(BNB_MAINNET_CHAIN_ID);
-      setStatus("已切换到 BNB Smart Chain，请刷新 V7 主网数据。");
-      if (wallet) await loadAllData(wallet);
+      setStatus("已切换到 BNB Smart Chain。需要查看最新数据时，请点击“刷新链上数据”。");
     } catch (switchError) {
       if (switchError?.code === 4902) {
         await injected.request({
@@ -499,12 +503,12 @@ export default function App() {
 
       let decimals = 18;
       let symbol = "Emoji";
-      try { decimals = Number(await tokenContract.decimals()); } catch {}
-      try { symbol = await tokenContract.symbol(); } catch {}
+      decimals = Number(await safeRead(() => tokenContract.decimals(), 18n));
+      symbol = await safeRead(() => tokenContract.symbol(), "Emoji");
       setTokenDecimals(decimals);
       setTokenSymbol(symbol);
 
-      const seasonId = await armyContract.currentSeason();
+      const seasonId = await safeRead(() => armyContract.currentSeason(), 1n);
       setCurrentSeason(seasonId.toString());
 
       const myArmy = await safeRead(() => armyContract.getUserArmy(seasonId, account), 0n);
@@ -545,12 +549,12 @@ export default function App() {
           vaultSeasonOut,
           vaultTreasuryAddress
         ] = await Promise.all([
-          vaultContract.getVaultBalance(),
-          vaultContract.totalReceived(),
-          vaultContract.totalWithdrawn(),
-          vaultContract.getSeasonReceived(seasonId),
-          vaultContract.getSeasonWithdrawn(seasonId),
-          vaultContract.treasury()
+          safeRead(() => vaultContract.getVaultBalance(), 0n),
+          safeRead(() => vaultContract.totalReceived(), 0n),
+          safeRead(() => vaultContract.totalWithdrawn(), 0n),
+          safeRead(() => vaultContract.getSeasonReceived(seasonId), 0n),
+          safeRead(() => vaultContract.getSeasonWithdrawn(seasonId), 0n),
+          safeRead(() => vaultContract.treasury(), TREASURY_ADDRESS)
         ]);
 
         setVaultBalance(vaultBal.toString());
@@ -578,13 +582,15 @@ export default function App() {
           activeSeason,
           info
         ] = await Promise.all([
-          rewardPoolContract.getPoolBalance(),
-          rewardPoolContract.getRealtimeClaimable(account),
-          rewardPoolContract.getSeasonBonusClaimable(BigInt(selectedBonusSeason || Math.max(1, Number(seasonId) - 1)), account),
-          rewardPoolContract.hasMinHold(account),
-          rewardPoolContract.minHoldAmount(),
-          rewardPoolContract.activeDepositSeason(),
-          rewardPoolContract.getSeasonInfo(BigInt(selectedBonusSeason || Math.max(1, Number(seasonId) - 1)))
+          safeRead(() => rewardPoolContract.getPoolBalance(), 0n),
+          safeRead(() => rewardPoolContract.getRealtimeClaimable(account), 0n),
+          safeRead(() => rewardPoolContract.getSeasonBonusClaimable(BigInt(selectedBonusSeason || Math.max(1, Number(seasonId) - 1)), account), 0n),
+          safeRead(() => rewardPoolContract.hasMinHold(account), false),
+          safeRead(() => rewardPoolContract.minHoldAmount(), 500000000000000000000000n),
+          safeRead(() => rewardPoolContract.activeDepositSeason(), 0n),
+          safeRead(() => rewardPoolContract.getSeasonInfo(BigInt(selectedBonusSeason || Math.max(1, Number(seasonId) - 1))), [
+            false, false, 0n, 0n, 0n, 0n, 0n, 0n, ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS
+          ])
         ]);
 
         setRewardPoolBalance(poolBal.toString());
@@ -607,31 +613,34 @@ export default function App() {
         setSeasonBonusClaimed("0");
       }
 
-      const memberData = {};
-      const burnData = {};
-      for (const army of armies) {
+      const armyRows = await Promise.all(armies.map(async (army) => {
         const [members, burns] = await Promise.all([
           safeRead(() => armyContract.getArmyMembers(seasonId, army.id), 0n),
           safeRead(() => burnContract.armyBurned(seasonId, army.id), 0n)
         ]);
-        memberData[army.id] = members.toString();
-        burnData[army.id] = burns.toString();
-      }
+        return { id: army.id, members: members.toString(), burns: burns.toString() };
+      }));
+      const memberData = {};
+      const burnData = {};
+      armyRows.forEach((row) => {
+        memberData[row.id] = row.members;
+        burnData[row.id] = row.burns;
+      });
       setArmyMembers(memberData);
       setArmyBurns(burnData);
 
-      const top = [];
-      for (let rank = 1; rank <= 10; rank++) {
+      const top = await Promise.all(Array.from({ length: 10 }, async (_, index) => {
+        const rank = index + 1;
         const [user, amount] = await Promise.all([
           safeRead(() => burnContract.getTopUser(seasonId, rank), ZERO_ADDRESS),
           safeRead(() => burnContract.getTopAmount(seasonId, rank), 0n)
         ]);
-        top.push({ rank, user, amount: amount.toString() });
-      }
+        return { rank, user, amount: amount.toString() };
+      }));
       setTopUsers(top);
 
       setLastUpdated(new Date().toLocaleTimeString());
-      setStatus("V7 数据已刷新。你可以按流程：买入 → 选军团 → 授权 → 燃烧 → Claim BNB。");
+      setStatus("链上数据已刷新。页面已优化为手动刷新模式，避免手机和钱包浏览器卡顿。");
     } catch (error) {
       setStatus(error?.shortMessage || error?.message || "读取 V7 主网数据失败。");
     } finally {
@@ -655,8 +664,7 @@ export default function App() {
       localStorage.setItem(localArmyKey(wallet), String(armyId));
       setSelectedArmyId(armyId);
       setPendingArmyId(armyId);
-      setStatus(`阵容确认成功：${army.emoji} ${army.cn}`);
-      await loadAllData(wallet);
+      setStatus(`阵容确认成功：${army.emoji} ${army.cn}。如需查看最新排行榜，请点击“刷新链上数据”。`);
     } catch (error) {
       const msg = error?.reason || error?.shortMessage || error?.message || "交易失败。";
       setStatus(msg.includes("Already joined") ? "你本赛季已经加入过军团，不能重复选择。" : msg);
@@ -676,8 +684,8 @@ export default function App() {
       setStatus(`正在授权 ${burnAmount} ${tokenSymbol} 给 V7 燃烧 合约，请在钱包确认。`);
       const tx = await token.approve(BURN_CONTRACT_ADDRESS, burnAmountWei);
       await tx.wait();
-      setStatus(`授权成功：${burnAmount} ${tokenSymbol}`);
-      await loadAllData(wallet);
+      setAllowance(burnAmountWei.toString());
+      setStatus(`授权成功：${burnAmount} ${tokenSymbol}。现在可以点击“燃烧”。`);
     } catch (error) {
       setStatus(error?.shortMessage || error?.message || "授权失败。");
     } finally {
@@ -698,8 +706,7 @@ export default function App() {
       setStatus(`正在燃烧 ${burnAmount} ${tokenSymbol}，请在钱包确认。`);
       const tx = await burn.burn(burnAmountWei);
       await tx.wait();
-      setStatus(`燃烧成功：${burnAmount} ${tokenSymbol} 已计入 ${selectedArmy?.emoji} ${selectedArmy?.cn}`);
-      await loadAllData(wallet);
+      setStatus(`燃烧成功：${burnAmount} ${tokenSymbol} 已计入 ${selectedArmy?.emoji} ${selectedArmy?.cn}。如需查看最新排名，请点击“刷新链上数据”。`);
     } catch (error) {
       const msg = error?.reason || error?.shortMessage || error?.message || "燃烧失败。";
       setStatus(msg.includes("allowance") ? "授权额度不足，请先点击 授权 授权。" : msg);
@@ -720,8 +727,8 @@ export default function App() {
       setStatus("正在领取实时燃烧分红，请在钱包确认。");
       const tx = await rewardPool.claimRealtime();
       await tx.wait();
+      setRealtimeClaimable("0");
       setStatus("实时分红领取成功，BNB 已发送到你的钱包。");
-      await loadAllData(wallet);
     } catch (error) {
       setStatus(error?.shortMessage || error?.reason || error?.message || "实时分红领取失败。");
     } finally {
@@ -742,8 +749,8 @@ export default function App() {
       setStatus(`正在领取最近已结束赛季奖励（第 ${targetSeason} 赛季），请在钱包确认。`);
       const tx = await rewardPool.claimSeasonBonus(BigInt(targetSeason));
       await tx.wait();
+      setSeasonBonusClaimable("0");
       setStatus("赛季奖励领取成功，BNB 已发送到你的钱包。");
-      await loadAllData(wallet);
     } catch (error) {
       setStatus(error?.shortMessage || error?.reason || error?.message || "赛季奖励领取失败。");
     } finally {
@@ -763,8 +770,9 @@ export default function App() {
       setStatus(`正在一键领取实时分红和最近 ${seasons.length} 个已结束赛季奖励，请在钱包确认。`);
       const tx = await rewardPool.claimAll(seasons.map((seasonId) => BigInt(seasonId)), true);
       await tx.wait();
-      setStatus("一键领取全部 成功，BNB 已发送到你的钱包。");
-      await loadAllData(wallet);
+      setRealtimeClaimable("0");
+      setSeasonBonusClaimable("0");
+      setStatus("一键领取全部成功，BNB 已发送到你的钱包。");
     } catch (error) {
       setStatus(error?.shortMessage || error?.reason || error?.message || "一键领取失败。");
     } finally {
@@ -806,7 +814,7 @@ export default function App() {
             <div className="actions">
               <button className="primaryBtn buttonReset" onClick={connectWallet}>{wallet ? "钱包已连接" : "连接钱包"}</button>
               <a className="secondaryBtn" href={links.flap} target="_blank" rel="noreferrer">{BUY_ACTION_TEXT}</a>
-              <button className="secondaryBtn buttonReset" onClick={() => loadAllData(wallet)} disabled={!wallet || isLoading}>刷新链上数据</button>
+              <button className="secondaryBtn buttonReset" onClick={() => loadAllData(wallet)} disabled={!wallet || isLoading}>手动刷新链上数据</button>
             </div>
             <p className="note">
               {IS_FINAL_TOKEN_LIVE ? "当前为Emoji 版本。" : "当前为 Emoji 正式开盘版。"} 最后刷新：{lastUpdated || "未刷新"}
@@ -879,7 +887,7 @@ export default function App() {
             <p>当前赛季： {currentSeason} · 剩余 {formatCountdown(secondsLeft)}</p>
             {status && <div className="statusMessage">{status}</div>}
             <div className="walletActions">
-              <button className="primaryBtn buttonReset" onClick={connectWallet} disabled={isLoading}>{isLoading ? "处理中..." : "连接 / 刷新"}</button>
+              <button className="primaryBtn buttonReset" onClick={connectWallet} disabled={isLoading}>{isLoading ? "处理中..." : wallet ? "钱包已连接" : "连接钱包"}</button>
             </div>
           </div>
 
