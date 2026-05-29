@@ -5,26 +5,26 @@ const BNB_MAINNET_CHAIN_ID = "0x38";
 const BNB_MAINNET_NAME = "BNB Smart Chain";
 
 // ① 正式 Army 合约地址：正式 Army 部署成功后替换这里
-const ARMY_CONTRACT_ADDRESS = "0xeB472e8863bce01C3D108477A036A7D24Fd34B38";
+const ARMY_CONTRACT_ADDRESS = "0x0094082ff5900E2e2Ca8059977Ad6949A31AFB79";
 
 // ② VaultFactory / 金库模板工厂地址：如果继续使用当前模板，通常不用改
-const VAULT_FACTORY_ADDRESS = "0x4cc87327A76430fF09Fa6879BF85BE09e03d1CBA";
+const VAULT_FACTORY_ADDRESS = "0x77bb9Cd1A3a1c24eC7bF4bf84cc3A6F9f59ebe35";
 
 // Emoji 正式主网配置：正式发币后优先替换下面 5 个地址
 // ③ 正式 Emoji Token 地址：Flap / GMGN 创建正式币后替换这里
-const TEST_TOKEN_ADDRESS = "0x1cfe9717be9d02370e3001717e5da157d35e7777";
+const TEST_TOKEN_ADDRESS = "0x3f3863189da031F2251305636589Bbbf80f07777";
 
 // ④ 正式 燃烧 合约地址：用正式 Token + 正式 Army 部署 燃烧 后替换这里
-const BURN_CONTRACT_ADDRESS = "0x7eB94A7E2fa35d9491d1043a230B201A70052CFA";
+const BURN_CONTRACT_ADDRESS = "0x2B5b31284E87460Bfc3018E67B60467899a16bfe";
 
 // ⑤ treasury：临时可以是你的钱包；最终建议 Vault treasury 指向正式 RewardPool
-const TREASURY_ADDRESS = "0x27e6a487eab81915e428cb41c18511600b1eceea";
+const TREASURY_ADDRESS = "0xE7af9834CCbBE4482f81E1dcfd1b169aC5cc3E38";
 
-// ⑥ 正式 Vault / 金库地址：Flap 创建正式币后生成的金库地址
-const EMOJI_WAR_VAULT_ADDRESS = "0x8b55FA7273c790F1caD86cf96917AcD0469Fc515";
+// ⑥ 新 Vault / 金库地址：暂时没找到，先用零地址占位；找到后替换这里
+const EMOJI_WAR_VAULT_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 // ⑦ 正式 RewardPool 地址：用正式 Token / 燃烧 / Army 部署 RewardPool 后替换这里
-const REWARD_POOL_ADDRESS = "0xf354AC72248458011e5B5A28b61018B3E11908d6";
+const REWARD_POOL_ADDRESS = "0xE7af9834CCbBE4482f81E1dcfd1b169aC5cc3E38";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -40,7 +40,7 @@ const IS_FINAL_TOKEN_LIVE = true;
 
 const links = {
   // ⑧ 正式购买链接：正式 Token 出来后改成 GMGN / Flap 的正式购买页面
-  flap: "https://gmgn.ai/bsc/token/0x1cfe9717be9d02370e3001717e5da157d35e7777",
+  flap: "https://flap.sh/bnb/0x3f3863189da031F2251305636589Bbbf80f07777",
   twitter: "https://x.com/EmojiWarBSC",
   telegram: "#",
   contract: TEST_TOKEN_ADDRESS
@@ -70,13 +70,13 @@ const TOKEN_ABI = [
 
 const BURN_ABI = [
   "function burn(uint256 amount)",
-  "function minimumRewardburnAmount() view returns (uint256)",
-  "function total燃烧edAllSeasons() view returns (uint256)",
-  "function seasonTotal燃烧ed(uint256 seasonId) view returns (uint256)",
-  "function seasonEligible燃烧ed(uint256 seasonId) view returns (uint256)",
-  "function user燃烧ed(uint256 seasonId, address user) view returns (uint256)",
-  "function army燃烧ed(uint256 seasonId, uint8 armyId) view returns (uint256)",
-  "function armyEligible燃烧ed(uint256 seasonId, uint8 armyId) view returns (uint256)",
+  "function minimumRewardBurnAmount() view returns (uint256)",
+  "function totalBurnedAllSeasons() view returns (uint256)",
+  "function seasonTotalBurned(uint256 seasonId) view returns (uint256)",
+  "function seasonEligibleBurned(uint256 seasonId) view returns (uint256)",
+  "function userBurned(uint256 seasonId, address user) view returns (uint256)",
+  "function armyBurned(uint256 seasonId, uint8 armyId) view returns (uint256)",
+  "function armyEligibleBurned(uint256 seasonId, uint8 armyId) view returns (uint256)",
   "function getTopUser(uint256 seasonId, uint8 rank) view returns (address)",
   "function getTopAmount(uint256 seasonId, uint8 rank) view returns (uint256)",
   "function getWinningArmy(uint256 seasonId) view returns (uint8 winningArmy, uint256 winningAmount)",
@@ -100,7 +100,7 @@ const REWARD_POOL_ABI = [
   "function getPoolBalance() view returns (uint256)",
   "function getRealtimeClaimable(address user) view returns (uint256)",
   "function getSeasonBonusClaimable(uint256 seasonId, address user) view returns (uint256)",
-  "function getSeasonInfo(uint256 seasonId) view returns (bool finalized,bool ended,uint256 deposited,uint256 bonusDeposited,uint256 bonusClaimed,uint256 total燃烧ed,uint256 eligible燃烧ed,uint8 winningArmy,address top1,address top2,address top3)",
+  "function getSeasonInfo(uint256 seasonId) view returns (bool finalized,bool ended,uint256 deposited,uint256 bonusDeposited,uint256 bonusClaimed,uint256 totalBurned,uint256 eligibleBurned,uint8 winningArmy,address top1,address top2,address top3)",
   "function claimRealtime()",
   "function claimSeasonBonus(uint256 seasonId)",
   "function claimAll(uint256[] seasonIds, bool includeRealtime)"
@@ -164,12 +164,12 @@ function armyById(id) {
   return armies.find((army) => army.id === Number(id));
 }
 
-function getClaimBlockReasons({ wallet, isMainnet, hasMinHold, realtimeClaimable, seasonBonusClaimable, my燃烧ed, seasonEnded, seasonFinalized, tokenSymbol }) {
+function getClaimBlockReasons({ wallet, isMainnet, hasMinHold, realtimeClaimable, seasonBonusClaimable, myBurned, seasonEnded, seasonFinalized, tokenSymbol }) {
   const reasons = [];
   if (!wallet) reasons.push("请先连接钱包。");
   if (wallet && !isMainnet) reasons.push("请先切换到 BNB Smart Chain。");
   if (wallet && isMainnet && !hasMinHold) reasons.push(`持币不足，需要至少 ${MIN_HOLD_TEXT} ${tokenSymbol}。`);
-  if (wallet && isMainnet && BigInt(my燃烧ed || "0") <= 0n) reasons.push("你本赛季还没有 燃烧，暂无燃烧权重。");
+  if (wallet && isMainnet && BigInt(myBurned || "0") <= 0n) reasons.push("你本赛季还没有 燃烧，暂无燃烧权重。");
   if (wallet && isMainnet && BigInt(realtimeClaimable || "0") <= 0n) reasons.push("当前没有实时可领取分红。");
   if (wallet && isMainnet && BigInt(seasonBonusClaimable || "0") <= 0n) {
     if (!seasonEnded) reasons.push("最近赛季奖励需赛季结束后领取。");
@@ -204,14 +204,14 @@ export default function App() {
   const [selectedArmyId, setSelectedArmyId] = useState(0);
   const [pendingArmyId, setPendingArmyId] = useState(0);
   const [armyMembers, setArmyMembers] = useState({});
-  const [army燃烧s, setArmy燃烧s] = useState({});
+  const [armyBurns, setArmyBurns] = useState({});
   const [tokenBalance, setTokenBalance] = useState("0");
   const [allowance, setAllowance] = useState("0");
-  const [my燃烧ed, setMy燃烧ed] = useState("0");
-  const [total燃烧ed, setTotal燃烧ed] = useState("0");
-  const [eligible燃烧ed, setEligible燃烧ed] = useState("0");
+  const [myBurned, setMyBurned] = useState("0");
+  const [totalBurned, setTotalBurned] = useState("0");
+  const [eligibleBurned, setEligibleBurned] = useState("0");
   const [winningArmyId, setWinningArmyId] = useState(0);
-  const [winningArmy燃烧, setWinningArmy燃烧] = useState("0");
+  const [winningArmyBurn, setWinningArmyBurn] = useState("0");
   const [topUsers, setTopUsers] = useState([]);
   const [vaultBalance, setVaultBalance] = useState("0");
   const [vaultTotalReceived, setVaultTotalReceived] = useState("0");
@@ -231,7 +231,7 @@ export default function App() {
   const [seasonEnded, setSeasonEnded] = useState(false);
   const [tokenDecimals, setTokenDecimals] = useState(18);
   const [tokenSymbol, setTokenSymbol] = useState("Emoji");
-  const [burnAmount, setburnAmount] = useState("1000");
+  const [burnAmount, setBurnAmount] = useState("1000");
   const [status, setStatus] = useState("V7 正式开盘版已准备。");
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("");
@@ -246,11 +246,11 @@ export default function App() {
     hasMinHold,
     realtimeClaimable,
     seasonBonusClaimable,
-    my燃烧ed,
+    myBurned,
     seasonEnded,
     seasonFinalized,
     tokenSymbol
-  }), [wallet, isMainnet, hasMinHold, realtimeClaimable, seasonBonusClaimable, my燃烧ed, seasonEnded, seasonFinalized, tokenSymbol]);
+  }), [wallet, isMainnet, hasMinHold, realtimeClaimable, seasonBonusClaimable, myBurned, seasonEnded, seasonFinalized, tokenSymbol]);
 
   const flowSteps = [
     { title: "买入", desc: "先买入 Emoji，进入战场" },
@@ -272,10 +272,10 @@ export default function App() {
 
   const snapshotCards = useMemo(() => [
     { label: "当前赛季", value: `第 ${currentSeason} 赛季`, desc: `剩余 ${formatCountdown(secondsLeft)}` },
-    { label: "Leading Army", value: winningArmy ? `${winningArmy.emoji} ${winningArmy.cn}` : "暂无", desc: `${formatAmount(winningArmy燃烧, tokenDecimals)} burned` },
+    { label: "Leading Army", value: winningArmy ? `${winningArmy.emoji} ${winningArmy.cn}` : "暂无", desc: `${formatAmount(winningArmyBurn, tokenDecimals)} burned` },
     { label: "Realtime Claim", value: `${formatBNB(realtimeClaimable)} BNB`, desc: "50% 实时燃烧分红" },
     { label: "RewardPool", value: `${formatBNB(rewardPoolBalance)} BNB`, desc: "当前可分配池余额" },
-  ], [currentSeason, secondsLeft, winningArmy, winningArmy燃烧, tokenDecimals, realtimeClaimable, rewardPoolBalance]);
+  ], [currentSeason, secondsLeft, winningArmy, winningArmyBurn, tokenDecimals, realtimeClaimable, rewardPoolBalance]);
 
   const burnAmountWei = useMemo(() => {
     try {
@@ -287,9 +287,9 @@ export default function App() {
 
   const needsApprove = burnAmountWei > BigInt(allowance || "0");
 
-  const rankedArmy燃烧s = useMemo(() => {
-    return [...armies].sort((a, b) => Number(BigInt(army燃烧s[b.id] || "0") - BigInt(army燃烧s[a.id] || "0")));
-  }, [army燃烧s]);
+  const rankedArmyBurns = useMemo(() => {
+    return [...armies].sort((a, b) => Number(BigInt(armyBurns[b.id] || "0") - BigInt(armyBurns[a.id] || "0")));
+  }, [armyBurns]);
 
   const rankedArmyMembers = useMemo(() => {
     return [...armies].sort((a, b) => Number(BigInt(armyMembers[b.id] || "0") - BigInt(armyMembers[a.id] || "0")));
@@ -299,10 +299,10 @@ export default function App() {
     return topUsers.filter((row) => row.user && row.user !== ZERO_ADDRESS && BigInt(row.amount || "0") > 0n);
   }, [topUsers]);
 
-  const leaderArmy燃烧 = useMemo(() => {
-    const first = rankedArmy燃烧s?.[0];
-    return BigInt(army燃烧s[first?.id] || "0");
-  }, [rankedArmy燃烧s, army燃烧s]);
+  const leaderArmyBurn = useMemo(() => {
+    const first = rankedArmyBurns?.[0];
+    return BigInt(armyBurns[first?.id] || "0");
+  }, [rankedArmyBurns, armyBurns]);
 
   useEffect(() => {
     const cur = Number(currentSeason || "1");
@@ -493,7 +493,8 @@ export default function App() {
       const armyContract = await getContract(ARMY_CONTRACT_ADDRESS, ARMY_ABI);
       const tokenContract = await getContract(TEST_TOKEN_ADDRESS, TOKEN_ABI);
       const burnContract = await getContract(BURN_CONTRACT_ADDRESS, BURN_ABI);
-      const vaultContract = await getContract(EMOJI_WAR_VAULT_ADDRESS, VAULT_ABI);
+      const hasVaultAddress = EMOJI_WAR_VAULT_ADDRESS !== ZERO_ADDRESS;
+      const vaultContract = hasVaultAddress ? await getContract(EMOJI_WAR_VAULT_ADDRESS, VAULT_ABI) : null;
       const rewardPoolContract = await getContract(REWARD_POOL_ADDRESS, REWARD_POOL_ABI);
 
       let decimals = 18;
@@ -513,28 +514,29 @@ export default function App() {
       setSelectedArmyId(nextArmyId);
       setPendingArmyId(nextArmyId);
 
-      const [balance, approved, burned, all燃烧ed, season燃烧ed, seasonEligible, seconds] = await Promise.all([
+      const [balance, approved, burned, allBurned, seasonBurned, seasonEligible, seconds] = await Promise.all([
         safeRead(() => tokenContract.balanceOf(account), 0n),
         safeRead(() => tokenContract.allowance(account, BURN_CONTRACT_ADDRESS), 0n),
-        safeRead(() => burnContract.user燃烧ed(seasonId, account), 0n),
-        safeRead(() => burnContract.total燃烧edAllSeasons(), 0n),
-        safeRead(() => burnContract.seasonTotal燃烧ed(seasonId), 0n),
-        safeRead(() => burnContract.seasonEligible燃烧ed(seasonId), 0n),
+        safeRead(() => burnContract.userBurned(seasonId, account), 0n),
+        safeRead(() => burnContract.totalBurnedAllSeasons(), 0n),
+        safeRead(() => burnContract.seasonTotalBurned(seasonId), 0n),
+        safeRead(() => burnContract.seasonEligibleBurned(seasonId), 0n),
         safeRead(() => armyContract.secondsUntilCurrentSeasonEnds(), 0n)
       ]);
 
       setTokenBalance(balance.toString());
       setAllowance(approved.toString());
-      setMy燃烧ed(burned.toString());
-      setTotal燃烧ed((all燃烧ed || season燃烧ed).toString());
-      setEligible燃烧ed(seasonEligible.toString());
+      setMyBurned(burned.toString());
+      setTotalBurned((allBurned || seasonBurned).toString());
+      setEligibleBurned(seasonEligible.toString());
       setSecondsLeft(seconds.toString());
 
       const [winningId, winningAmount] = await safeRead(() => burnContract.getWinningArmy(seasonId), [0n, 0n]);
       setWinningArmyId(Number(winningId));
-      setWinningArmy燃烧(winningAmount.toString());
+      setWinningArmyBurn(winningAmount.toString());
 
       try {
+        if (!vaultContract) throw new Error("Vault address not set yet");
         const [
           vaultBal,
           vaultReceived,
@@ -563,6 +565,7 @@ export default function App() {
         setVaultTotalWithdrawn("0");
         setVaultSeasonReceived("0");
         setVaultSeasonWithdrawn("0");
+        setVaultTreasury(TREASURY_ADDRESS);
       }
 
       try {
@@ -609,13 +612,13 @@ export default function App() {
       for (const army of armies) {
         const [members, burns] = await Promise.all([
           safeRead(() => armyContract.getArmyMembers(seasonId, army.id), 0n),
-          safeRead(() => burnContract.army燃烧ed(seasonId, army.id), 0n)
+          safeRead(() => burnContract.armyBurned(seasonId, army.id), 0n)
         ]);
         memberData[army.id] = members.toString();
         burnData[army.id] = burns.toString();
       }
       setArmyMembers(memberData);
-      setArmy燃烧s(burnData);
+      setArmyBurns(burnData);
 
       const top = [];
       for (let rank = 1; rank <= 10; rank++) {
@@ -817,7 +820,7 @@ export default function App() {
                 <div className={`miniArmy ${selectedArmyId === army.id ? "activeMini" : ""}`} key={army.cn}>
                   <div>{army.emoji}</div>
                   <b>{army.cn}</b>
-                  <span>{formatAmount(army燃烧s[army.id] || "0", tokenDecimals)} burned</span>
+                  <span>{formatAmount(armyBurns[army.id] || "0", tokenDecimals)} burned</span>
                 </div>
               ))}
             </div>
@@ -872,7 +875,7 @@ export default function App() {
             <p>网络：{isMainnet ? "BNB Smart Chain" : chainId ? `请切换网络 (${chainId})` : "未连接"}</p>
             <p>当前阵容：{selectedArmy ? `${selectedArmy.emoji} ${selectedArmy.cn}` : "未确认"}</p>
             <p>持币： {formatAmount(tokenBalance, tokenDecimals)} {tokenSymbol} <span className={hasMinHold ? "statusTag" : "statusTag bad"}>{hasMinHold ? "满足持币门槛" : `需要 ${MIN_HOLD_TEXT}+`}</span></p>
-            <p>我的燃烧： {formatAmount(my燃烧ed, tokenDecimals)} {tokenSymbol}</p>
+            <p>我的燃烧： {formatAmount(myBurned, tokenDecimals)} {tokenSymbol}</p>
             <p>当前赛季： {currentSeason} · 剩余 {formatCountdown(secondsLeft)}</p>
             {status && <div className="statusMessage">{status}</div>}
             <div className="walletActions">
@@ -930,11 +933,11 @@ export default function App() {
           <div className="burnBox">
             <h3>燃烧数量</h3>
             <label>燃烧数量</label>
-            <input value={burnAmount} onChange={(e) => setburnAmount(e.target.value.replace(/[^\d]/g, ""))} placeholder="1000" />
+            <input value={burnAmount} onChange={(e) => setBurnAmount(e.target.value.replace(/[^\d]/g, ""))} placeholder="1000" />
             <div className="burnStats">
               <div><p>授权额度</p><b>{formatAmount(allowance, tokenDecimals)} {tokenSymbol}</b></div>
-              <div><p>全赛季总燃烧</p><b>{formatAmount(total燃烧ed, tokenDecimals)} {tokenSymbol}</b></div>
-              <div><p>当前赛季有效燃烧</p><b>{formatAmount(eligible燃烧ed, tokenDecimals)} {tokenSymbol}</b></div>
+              <div><p>全赛季总燃烧</p><b>{formatAmount(totalBurned, tokenDecimals)} {tokenSymbol}</b></div>
+              <div><p>当前赛季有效燃烧</p><b>{formatAmount(eligibleBurned, tokenDecimals)} {tokenSymbol}</b></div>
               <div><p>当前冠军军团</p><b>{winningArmy ? `${winningArmy.emoji} ${winningArmy.cn}` : "暂无"}</b></div>
             </div>
             <div className="walletActions">
@@ -965,11 +968,11 @@ export default function App() {
         <div className="rankingGrid">
           <div className="rankingCard">
             <div className="rankingHead"><h3>军团排名</h3><span>Army 燃烧 Power</span></div>
-            {rankedArmy燃烧s.map((army, index) => (
+            {rankedArmyBurns.map((army, index) => (
               <div className="armyRow" key={army.cn}>
                 <div className="rankBadge">{index + 1}</div>
                 <div className="armyName"><span>{army.emoji}</span><div><b>{army.cn}</b><p>{army.en}</p></div></div>
-                <div className="army燃烧"><b>{formatAmount(army燃烧s[army.id] || "0", tokenDecimals)}</b><p>{tokenSymbol} burned</p></div>
+                <div className="armyBurn"><b>{formatAmount(armyBurns[army.id] || "0", tokenDecimals)}</b><p>{tokenSymbol} burned</p></div>
               </div>
             ))}
           </div>
@@ -982,7 +985,7 @@ export default function App() {
               <div className="armyRow topUserRow" key={row.rank}>
                 <div className="rankBadge">{row.rank}</div>
                 <div className="armyName"><span>🔥</span><div><b>{shortAddress(row.user)}</b><p>个人燃烧地址</p></div></div>
-                <div className="army燃烧"><b>{formatAmount(row.amount, tokenDecimals)}</b><p>{tokenSymbol} burned</p></div>
+                <div className="armyBurn"><b>{formatAmount(row.amount, tokenDecimals)}</b><p>{tokenSymbol} burned</p></div>
               </div>
             ))}
           </div>
